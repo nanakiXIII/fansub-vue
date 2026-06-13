@@ -1,0 +1,111 @@
+// src/data/team.js
+// Membres de l'équipe — sera remplacé par un appel API une fois le backend branché.
+
+export const team = [
+  // Direction
+  {
+    id: 'kitsune-sub',
+    name: 'Kitsune_sub',
+    role: 'Fondatrice & coordination',
+    department: 'Direction',
+    initials: 'KS',
+    avatarGradient: 'linear-gradient(135deg,#f47521,#c2540a)',
+    joined: '2019',
+    bio: "À l'origine du projet depuis 2019, elle supervise le planning des sorties et veille à la cohérence éditoriale de chaque saison.",
+    tags: ['Coordination', 'Planning'],
+  },
+  {
+    id: 'ryo-sub',
+    name: 'Ryo_Sub',
+    role: 'Co-fondateur & relations communauté',
+    department: 'Direction',
+    initials: 'RS',
+    avatarGradient: 'linear-gradient(135deg,#22d3ee,#0e7490)',
+    joined: '2019',
+    bio: "Gère le serveur Discord et fait le lien entre l'équipe et la communauté — toujours partant pour discuter sorties et suggestions.",
+    tags: ['Discord', 'Communauté'],
+  },
+
+  // Traduction
+  {
+    id: 'misuz',
+    name: 'MisuZ',
+    role: 'Traductrice JP → FR',
+    department: 'Traduction',
+    initials: 'MZ',
+    avatarGradient: 'linear-gradient(135deg,#a855f7,#7e22ce)',
+    joined: '2020',
+    bio: "Spécialiste des dialogues denses et des références culturelles — elle affectionne particulièrement les séries de sport et de tranche de vie.",
+    tags: ['JP → FR', 'Adaptation'],
+  },
+  {
+    id: 'hanaen',
+    name: 'HanaeN',
+    role: 'Traductrice & correctrice',
+    department: 'Traduction',
+    initials: 'HN',
+    avatarGradient: 'linear-gradient(135deg,#f4537e,#be185d)',
+    joined: '2021',
+    bio: "Passe derrière chaque traduction pour traquer la moindre coquille et fluidifier les tournures avant la mise en ligne.",
+    tags: ['Correction', 'Relecture'],
+  },
+  {
+    id: 'aki-trad',
+    name: 'Aki_Trad',
+    role: 'Traducteur JP → FR',
+    department: 'Traduction',
+    initials: 'AT',
+    avatarGradient: 'linear-gradient(135deg,#34d399,#047857)',
+    joined: '2022',
+    bio: "Le petit dernier de l'équipe traduction, déjà bien aguerri sur les séries d'action et les longs arcs scénaristiques.",
+    tags: ['JP → FR', 'Action'],
+  },
+
+  // Édition & time
+  {
+    id: 'mei-otaku',
+    name: 'Mei_Otaku',
+    role: 'Time & karaoké',
+    department: 'Édition',
+    initials: 'MO',
+    avatarGradient: 'linear-gradient(135deg,#fbbf24,#b45309)',
+    joined: '2021',
+    bio: "Cale chaque sous-titre à la frame près et conçoit les karaokés d'opening/ending qui font sa réputation.",
+    tags: ['Time', 'Karaoké'],
+  },
+  {
+    id: 'zephyr-edit',
+    name: 'Zephyr_Edit',
+    role: 'Typesetting & encodage',
+    department: 'Édition',
+    initials: 'ZE',
+    avatarGradient: 'linear-gradient(135deg,#60a5fa,#1d4ed8)',
+    joined: '2022',
+    bio: "S'occupe de l'habillage des sous-titres sur les panneaux et de l'encodage final avant la mise en ligne.",
+    tags: ['Typesetting', 'Encodage'],
+  },
+
+  // Qualité & communauté
+  {
+    id: 'hana-chan',
+    name: 'Hana_Chan',
+    role: 'Vérification qualité (QC)',
+    department: 'Communauté',
+    initials: 'HC',
+    avatarGradient: 'linear-gradient(135deg,#f472b6,#9d174d)',
+    joined: '2023',
+    bio: "Visionne chaque épisode avant publication pour s'assurer que tout est nickel — typo, synchronisation, qualité d'image.",
+    tags: ['QC', 'Visionnage'],
+  },
+  {
+    id: 'yuki-mod',
+    name: 'Yuki_Mod',
+    role: 'Modération Discord',
+    department: 'Communauté',
+    initials: 'YM',
+    avatarGradient: 'linear-gradient(135deg,#818cf8,#4338ca)',
+    joined: '2022',
+    bio: "Veille à la bonne ambiance sur le serveur et organise les animations et tirages au sort pour la communauté.",
+    tags: ['Modération', 'Animations'],
+  },
+]
