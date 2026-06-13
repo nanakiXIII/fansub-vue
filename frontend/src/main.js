@@ -35,6 +35,7 @@ import AdminAnalytics    from './views/admin/AdminAnalytics.vue'
 import AdminBeta         from './views/admin/AdminBeta.vue'
 import AdminAlerts       from './views/admin/AdminAlerts.vue'
 import AdminAudit        from './views/admin/AdminAudit.vue'
+import AdminApiTester    from './views/admin/AdminApiTester.vue'
 import { useSettings } from './composables/useSettings.js'
 import { http } from './services/http.js'
 import { socket } from './services/socket.js'
@@ -125,6 +126,7 @@ const router = createRouter({
         { path: 'beta',          component: AdminBeta,         meta: { title: 'Bêta — Admin'          } },
         { path: 'alertes',       component: AdminAlerts,       meta: { title: 'Alertes — Admin'       } },
         { path: 'audit',         component: AdminAudit,        meta: { title: "Logs d'audit — Admin"  } },
+        { path: 'api-tester',    component: AdminApiTester,    meta: { title: 'API Tester — Admin'    } },
       ],
     },
   ],
