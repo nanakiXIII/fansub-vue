@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "PowerShell($r = Invoke-WebRequest -Uri \"http://localhost:5173/src/views/NewsDetailPage.vue\" -UseBasicParsing; $r.Content | Select-String -Pattern \"Internal server error|SyntaxError|Pre-transform error|Illegal '/' in tags\"; \\(Invoke-WebRequest -Uri \"http://localhost:5173/actualite/1\" -UseBasicParsing\\).StatusCode)",
-      "PowerShell($r = Invoke-WebRequest -Uri \"http://localhost:5173/src/views/DetailPage.vue\" -UseBasicParsing; $r.Content | Select-String -Pattern \"Internal server error|SyntaxError|Pre-transform error|Illegal '/' in tags\"; \\(Invoke-WebRequest -Uri \"http://localhost:5173/serie/jujutsu-kaisen-s3\" -UseBasicParsing\\).StatusCode)"
-    ]
-  }
-}
