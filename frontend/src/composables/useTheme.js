@@ -22,3 +22,16 @@ watch(theme, (value) => {
   document.documentElement.setAttribute('data-theme', value)
   setCookie('theme', value)
 }, { immediate: true })
+
+export const layouts = [
+  { id: 'default', label: 'Classique',     icon: '▣' },
+  { id: 'glass',   label: 'Glassmorphism', icon: '◈' },
+]
+
+const storedLayout = getCookie('layout')
+export const layout = ref(layouts.some(l => l.id === storedLayout) ? storedLayout : 'default')
+
+watch(layout, (value) => {
+  document.documentElement.setAttribute('data-layout', value)
+  setCookie('layout', value)
+}, { immediate: true })

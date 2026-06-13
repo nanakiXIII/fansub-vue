@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <RouterLink :to="`/serie/${serie.id}`" class="anime-card group">
     <!-- Thumbnail -->
     <div class="relative aspect-[2/3] overflow-hidden">
@@ -57,8 +57,6 @@ const props = defineProps({
 const { isSerieNew } = useReleases()
 const hasNewEpisode = computed(() => isSerieNew(props.serie.id))
 
-// Quand les épisodes sont répartis dans les saisons (serie.episodes vide),
-// on somme les longueurs de chaque saison.
 const totalEpisodes = computed(() => {
   if (props.serie.episodes.length) return props.serie.episodes.length
   return props.serie.seasons?.reduce((sum, s) => sum + (s.episodes?.length ?? 0), 0) ?? 0

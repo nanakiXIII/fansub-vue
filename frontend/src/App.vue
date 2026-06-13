@@ -4,7 +4,7 @@
       <MaintenancePage />
     </template>
     <template v-else>
-      <AppNavbar />
+      <component :is="currentNavbar" />
       <main class="flex-1">
         <RouterView />
       </main>
@@ -44,6 +44,7 @@
 <script setup>
 import { computed, onMounted, watch } from 'vue'
 import AppNavbar       from '@/components/AppNavbar.vue'
+import AppNavbarGlass  from '@/components/AppNavbarGlass.vue'
 import AppFooter       from '@/components/AppFooter.vue'
 import CookieBanner    from '@/components/CookieBanner.vue'
 import AchievementToast from '@/components/AchievementToast.vue'
@@ -55,6 +56,7 @@ import MaintenancePage from '@/components/MaintenancePage.vue'
 import { useAuth }     from '@/composables/useAuth.js'
 import { useSocket }   from '@/composables/useSocket.js'
 import { useSettings } from '@/composables/useSettings.js'
+import { layout }      from '@/composables/useTheme.js'
 import { useFollows }  from '@/composables/useFollows.js'
 import { useNotifications } from '@/composables/useNotifications.js'
 import { useBeta }     from '@/composables/useBeta.js'
@@ -65,6 +67,7 @@ const settings    = useSettings()
 const { load: loadFollows, reset: resetFollows } = useFollows()
 const { load: loadNotifs, reset: resetNotifs, prepend: prependNotif } = useNotifications()
 const { maintenanceEnabled, maintenanceAllowedRoles } = useBeta()
+const currentNavbar = computed(() => layout.value === 'glass' ? AppNavbarGlass : AppNavbar)
 
 // Bloqué si maintenance active ET pas admin ET rôle non autorisé
 const isBlocked = computed(() => {

@@ -53,6 +53,57 @@
     --color-ink-2: 179 148 163;
     --color-ink-3: 115 90 103;
   }
+  /* ──── Layout glassmorphism ──────────────────────────────────────────── */
+  [data-layout="glass"] body {
+    background:
+      radial-gradient(ellipse at 15% 0%,   rgba(var(--color-orange), 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 10%,  rgba(80, 60, 200, 0.10) 0%,   transparent 55%),
+      radial-gradient(ellipse at 50% 100%, rgba(30, 60, 160, 0.07) 0%,   transparent 55%),
+      rgb(var(--color-bg-0));
+    background-attachment: fixed;
+  }
+  [data-layout="glass"] .anime-card {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.09);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  [data-layout="glass"] .anime-card:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(var(--color-orange),0.35);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(var(--color-orange),0.12), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  [data-layout="glass"] .sidebar-card {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  [data-layout="glass"] .ep-row {
+    background: rgba(255,255,255,0.03);
+    border-color: rgba(255,255,255,0.08);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  [data-layout="glass"] .ep-row:hover { background: rgba(255,255,255,0.06); }
+  [data-layout="glass"] .ep-row.active {
+    background: rgba(var(--color-orange),0.08);
+    border-color: rgba(var(--color-orange),0.4);
+    box-shadow: 0 0 12px rgba(var(--color-orange),0.08);
+  }
+  [data-layout="glass"] .btn-outline,
+  [data-layout="glass"] .btn-ghost {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.12);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  [data-layout="glass"] .btn-outline:hover,
+  [data-layout="glass"] .btn-ghost:hover {
+    background: rgba(255,255,255,0.09);
+    border-color: rgba(255,255,255,0.22);
+  }
+
   /* Clin d'œil au thème "Air" de SeedTeam : bleu-gris sombre et accent azur */
   [data-theme='air'] {
     --color-bg-0: 19 21 28;

@@ -101,6 +101,114 @@ Voir les fichiers `.env.example` de chaque sous-dossier pour la liste complète 
 
 ---
 
+## Déploiement avec Docker
+
+> Lance toute la stack (frontend + API + MongoDB) en une seule commande, sans rien installer localement.
+
+### Prérequis
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) ≥ 24 (inclut Docker Compose)
+
+### 1. Cloner le dépôt
+
+```bash
+git clone https://github.com/votre-utilisateur/fansub-vue.git
+cd fansub-vue
+```
+
+### 2. Configurer l'environnement
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Ouvrez `backend/.env` et renseignez au minimum ces deux secrets :
+
+```env
+JWT_SECRET=<valeur aléatoire longue>
+JWT_REFRESH_SECRET=<autre valeur aléatoire>
+```
+
+> **Générer des secrets sécurisés :**
+> ```bash
+> node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+> # ou
+> openssl rand -hex 64
+> ```
+>
+> Les autres variables (`MONGODB_URI`, `CORS_ORIGIN`, etc.) sont déjà pré-remplies dans le `docker-compose.yml` pour un environnement local.
+
+### 3. Construire et démarrer
+
+```bash
+docker compose up -d --build
+```
+
+C'est tout. L'application est disponible sur **[http://localhost](http://localhost)**.
+
+```
+✔  fansub_mongo     Up (healthy)
+✔  fansub_backend   Up
+✔  fansub_frontend  Up   0.0.0.0:80->80/tcp
+```
+
+| URL | Service |
+|---|---|
+| `http://localhost` | Interface Vue 3 |
+| `http://localhost/api` | API REST |
+| `http://localhost/socket.io` | WebSocket Socket.IO |
+
+### 4. Commandes utiles
+
+```bash
+# Voir les logs en direct
+docker compose logs -f
+
+# Logs d'un service en particulier
+docker compose logs -f backend
+
+# Arrêter (sans perdre les données)
+docker compose stop
+
+# Arrêter et supprimer les conteneurs
+docker compose down
+
+# Tout supprimer, base de données incluse ⚠️
+docker compose down -v
+
+# Reconstruire après une modification du code
+docker compose up -d --build backend
+docker compose up -d --build frontend
+
+# Shell dans le backend
+docker compose exec backend sh
+
+# Console MongoDB
+docker compose exec mongo mongosh fansub
+```
+
+### Architecture Docker
+
+```
+        ┌─────────────────────────────────┐
+        │     nginx (port 80)             │
+        │   frontend/nginx.conf           │
+        │                                 │
+        │  /          → dist/index.html   │
+        │  /api/      → backend:3000      │
+        │  /socket.io → backend:3000 (WS) │
+        └────────────┬────────────────────┘
+                     │ réseau interne fansub_net
+             ┌───────┴──────┐
+             │              │
+     ┌───────▼───────┐  ┌───▼──────────────┐
+     │   backend     │  │   mongo:27017     │
+     │   (Express)   │──│   (non exposé)    │
+     └───────────────┘  └──────────────────┘
+```
+
+---
+
 ## Déploiement en production
 
 ### 1. Build du frontend

@@ -822,6 +822,32 @@
         </div>
       </div>
 
+      <!-- Template -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">Template</div>
+        <div class="p-4">
+          <div class="text-[11px] text-ink-3 mb-3 leading-relaxed max-w-md">
+            Choisis la mise en page globale du site.
+          </div>
+          <div class="flex gap-3">
+            <button
+              v-for="l in layouts"
+              :key="l.id"
+              type="button"
+              class="flex-1 rounded-lg border-2 p-3 text-center transition-all cursor-pointer"
+              :class="layout === l.id ? 'border-orange bg-orange/10' : 'border-white/10 bg-bg-2 hover:border-white/25'"
+              @click="layout = l.id"
+            >
+              <div class="text-[22px] mb-1.5 leading-none">{{ l.icon }}</div>
+              <div class="text-[12px] font-semibold text-ink-1 flex items-center justify-center gap-1.5">
+                {{ l.label }}
+                <svg v-if="layout === l.id" class="w-3.5 h-3.5 text-orange shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Apparence -->
       <div class="sidebar-card">
         <div class="sidebar-card-header">Apparence</div>
@@ -985,7 +1011,7 @@
 import { ref, computed, watch, onMounted, watchEffect } from 'vue'
 import { useBeta } from '@/composables/useBeta.js'
 import { overlayOpacity, overlayAlpha } from '@/composables/useImageOverlay.js'
-import { theme, themes } from '@/composables/useTheme.js'
+import { theme, themes, layout, layouts } from '@/composables/useTheme.js'
 import { useProgress } from '@/composables/useProgress.js'
 import { useSettings } from '@/composables/useSettings.js'
 import { useDownloads } from '@/composables/useDownloads.js'
