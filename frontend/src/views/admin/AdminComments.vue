@@ -96,7 +96,10 @@ const filtered = computed(() => {
 })
 
 onMounted(async () => {
-  try { comments.value = await http.get('/comments?admin=1') } catch {}
+  try {
+    const res = await http.get('/comments?admin=1&limit=200')
+    comments.value = res.comments ?? []
+  } catch {}
   loading.value = false
 })
 

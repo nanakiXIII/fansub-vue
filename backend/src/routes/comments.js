@@ -1,13 +1,13 @@
 const express = require('express')
 const { body, validationResult } = require('express-validator')
 const Comment = require('../models/Comment')
-const { requireAuth, requirePermission } = require('../middleware/auth')
+const { requireAuth, requirePermission, optionalAuth } = require('../middleware/auth')
 const { logAudit } = require('../services/audit')
 
 const router = express.Router()
 
 // GET /api/comments?articleId=&serieId=&epNum=&userId=&page=1&limit=20
-router.get('/', async (req, res, next) => {
+router.get('/', optionalAuth, async (req, res, next) => {
   try {
     const { articleId, serieId, epNum, userId, page = 1, limit = 20 } = req.query
     const filter = {}
@@ -17,21 +17,11 @@ router.get('/', async (req, res, next) => {
     if (epNum !== undefined) filter.epNum = epNum === 'null' ? null : Number(epNum)
     if (userId)    filter.userId    = userId
 
-    // Vérifie si le requêteur est admin via le token JWT (optionnel)
-    let isAdmin = false
-    const header = req.headers.authorization
-    if (header?.startsWith('Bearer ')) {
-      try {
-        const jwt  = require('jsonwebtoken')
-        const User = require('../models/User')
-        const payload = jwt.verify(header.slice(7), process.env.JWT_SECRET)
-        const user = await User.findById(payload.id).select('isAdmin')
-        isAdmin = !!user?.isAdmin
-      } catch {}
-    }
+    const perms = req.userPermissions ?? []
+    const canModerate = perms.includes('*') || perms.includes('comments.moderate')
 
-    // Admin → tous les statuts ; userId fourni → tous les statuts pour cet utilisateur ; sinon → approuvés seulement
-    if (!isAdmin && !userId) {
+    // Modérateur → tous les statuts ; userId fourni → tous les statuts pour cet utilisateur ; sinon → approuvés seulement
+    if (!canModerate && !userId) {
       filter.status = 'approved'
     }
 
