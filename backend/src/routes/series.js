@@ -16,10 +16,17 @@ function canPreview(req) {
   return p.includes('*') || p.includes('content.preview')
 }
 
-// GET /api/series?status=&genre=&search=
+function canModifySerie(req, serieId) {
+  const perms = req.userPermissions ?? []
+  if (perms.includes('*')) return true
+  const ids = req.userSeriesIds ?? []
+  return ids.length === 0 || ids.includes(String(serieId))
+}
+
+// GET /api/series?status=&genre=&search=&managed=1
 router.get('/', optionalAuth, async (req, res, next) => {
   try {
-    const { status, genre, search } = req.query
+    const { status, genre, search, managed } = req.query
     const filter = {}
     if (status) filter.status = status
     if (genre)  filter.genres = genre
@@ -28,6 +35,13 @@ router.get('/', optionalAuth, async (req, res, next) => {
       { titleFull: { $regex: search, $options: 'i' } },
     ]
     if (!canPreview(req)) filter.visible = { $ne: false }
+
+    // ?managed=1 : restreindre aux séries autorisées par le grade
+    const perms = req.userPermissions ?? []
+    if (managed && !perms.includes('*') && req.userSeriesIds?.length > 0) {
+      filter.id = { $in: req.userSeriesIds }
+    }
+
     const series = await Series.find(filter).sort({ createdAt: -1 }).lean()
     res.json(series)
   } catch (err) { next(err) }
@@ -67,6 +81,9 @@ router.post('/',
 // PUT /api/series/:id — admin uniquement
 router.put('/:id', requireAuth, requirePermission('series.edit'), async (req, res, next) => {
   try {
+    if (!canModifySerie(req, req.params.id))
+      return res.status(403).json({ error: 'Vous n\'êtes pas autorisé à modifier cette série' })
+
     // Snapshot des épisodes existants avant mise à jour
     const before = await Series.findOne({ id: req.params.id }).lean()
     const existingKeys = new Set()
@@ -153,6 +170,9 @@ router.put('/:id', requireAuth, requirePermission('series.edit'), async (req, re
 // DELETE /api/series/:id — admin uniquement
 router.delete('/:id', requireAuth, requirePermission('series.delete'), async (req, res, next) => {
   try {
+    if (!canModifySerie(req, req.params.id))
+      return res.status(403).json({ error: 'Vous n\'êtes pas autorisé à supprimer cette série' })
+
     const serie = await Series.findOneAndDelete({ id: req.params.id })
     if (!serie) return res.status(404).json({ error: 'Série introuvable' })
     await Stat.deleteMany({ serieId: req.params.id })

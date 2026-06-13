@@ -132,6 +132,51 @@
             </div>
           </div>
 
+            <!-- Restriction de séries -->
+            <div v-if="hasSeriesPerms" class="flex flex-col gap-2 mt-3">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-ink-3 uppercase tracking-wide">Séries autorisées</span>
+                <span v-if="form.seriesIds?.length" class="text-[9px] text-orange font-semibold">{{ form.seriesIds.length }} sélectionnée(s)</span>
+              </div>
+              <div class="flex gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" v-model="seriesMode" value="all" @change="form.seriesIds = []" class="accent-orange w-3.5 h-3.5" />
+                  <span class="text-[11px] text-ink-1">Toutes les séries</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" v-model="seriesMode" value="specific" class="accent-orange w-3.5 h-3.5" />
+                  <span class="text-[11px] text-ink-1">Séries spécifiques</span>
+                </label>
+              </div>
+              <div v-if="seriesMode === 'specific'" class="bg-bg-2 border border-white/[0.06] rounded-xl p-3 flex flex-col gap-2">
+                <input
+                  v-model="seriesSearch"
+                  type="text"
+                  placeholder="Rechercher une série…"
+                  class="admin-input text-[11px] py-1.5"
+                />
+                <div class="flex flex-col gap-0.5 max-h-44 overflow-y-auto pr-0.5">
+                  <div v-if="!filteredSeriesList.length" class="text-[11px] text-ink-3 py-2 text-center">Aucune série trouvée</div>
+                  <label
+                    v-for="s in filteredSeriesList"
+                    :key="s.id"
+                    class="flex items-center gap-2.5 cursor-pointer py-1 px-1.5 rounded-lg hover:bg-white/[0.04] transition-colors"
+                  >
+                    <input type="checkbox" :value="s.id" v-model="form.seriesIds" class="w-3.5 h-3.5 accent-orange shrink-0" />
+                    <img v-if="s.poster" :src="s.poster" class="w-5 h-7 object-cover rounded shrink-0" loading="lazy" />
+                    <div class="min-w-0">
+                      <div class="text-[11px] text-ink-1 truncate leading-tight">{{ s.title }}</div>
+                      <div class="text-[9px] text-ink-3 font-mono leading-tight">{{ s.id }}</div>
+                    </div>
+                  </label>
+                </div>
+                <div v-if="form.seriesIds?.length" class="flex items-center justify-between pt-1.5 border-t border-white/[0.06]">
+                  <span class="text-[10px] text-ink-3">{{ form.seriesIds.length }} série(s) sélectionnée(s)</span>
+                  <button type="button" @click="form.seriesIds = []" class="text-[10px] text-ink-3 hover:text-red-400 transition-colors">Tout désélectionner</button>
+                </div>
+              </div>
+            </div>
+
           <div v-if="formError" class="mt-3 text-[11px] text-red-400">{{ formError }}</div>
           <div class="flex gap-2 mt-5">
             <button @click="modal = null" class="btn-outline flex-1 text-[12px] py-2">Annuler</button>
@@ -146,15 +191,30 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { http } from '@/services/http.js'
 
-const roles     = ref([])
-const loading   = ref(true)
-const modal     = ref(null)
-const saving    = ref(false)
-const formError = ref('')
-const form      = ref({})
+const roles       = ref([])
+const allSeries   = ref([])
+const loading     = ref(true)
+const modal       = ref(null)
+const saving      = ref(false)
+const formError   = ref('')
+const form        = ref({})
+const seriesSearch = ref('')
+const seriesMode   = ref('all') // 'all' | 'specific'
+
+const hasSeriesPerms = computed(() =>
+  form.value.permissions?.some(p => p === 'series.edit' || p === 'series.delete')
+)
+
+const filteredSeriesList = computed(() => {
+  const q = seriesSearch.value.trim().toLowerCase()
+  if (!q) return allSeries.value
+  return allSeries.value.filter(s =>
+    s.title?.toLowerCase().includes(q) || s.id?.toLowerCase().includes(q)
+  )
+})
 
 // ── Drag & drop ────────────────────────────────────────────────────
 const dragIndex = ref(null)
@@ -217,6 +277,7 @@ const permissionGroups = [
       { key: 'series.create', label: 'Créer' },
       { key: 'series.edit',   label: 'Modifier' },
       { key: 'series.delete', label: 'Supprimer' },
+      { key: 'files.browse',  label: 'Parcourir les fichiers médias' },
     ],
   },
   {
@@ -288,19 +349,24 @@ function autoName() {
 
 onMounted(async () => {
   try { roles.value = await http.get('/roles') } catch {}
+  try { allSeries.value = (await http.get('/series')).sort((a, b) => a.title.localeCompare(b.title)) } catch {}
   loading.value = false
 })
 
 function openAdd() {
-  form.value  = { name: '', label: '', color: '', description: '', permissions: [] }
-  formError.value = ''
+  form.value       = { name: '', label: '', color: '', description: '', permissions: [], seriesIds: [] }
+  formError.value  = ''
+  seriesSearch.value = ''
+  seriesMode.value = 'all'
   resetGradient()
   modal.value = { mode: 'add' }
 }
 
 function openEdit(r) {
-  form.value  = { ...r }
-  formError.value = ''
+  form.value       = { ...r, seriesIds: r.seriesIds ? [...r.seriesIds] : [] }
+  formError.value  = ''
+  seriesSearch.value = ''
+  seriesMode.value = form.value.seriesIds.length ? 'specific' : 'all'
   parseGradient()
   modal.value = { mode: 'edit', id: r._id }
 }
@@ -317,6 +383,7 @@ async function submitForm() {
   formError.value = ''
   if (!form.value.label) { formError.value = 'Le nom du grade est requis.'; return }
   if (modal.value.mode === 'add' && !form.value.name) form.value.name = toName(form.value.label)
+  if (seriesMode.value === 'all') form.value.seriesIds = []
   saving.value = true
   try {
     if (modal.value.mode === 'add') {

@@ -581,13 +581,11 @@
           <div v-else-if="!fpEntries.length" class="text-[12px] text-ink-3 text-center py-8">Dossier vide</div>
           <div v-else class="flex flex-col gap-1">
             <button
-              v-for="entry in fpEntries"
+              v-for="entry in fpVisibleEntries"
               :key="entry.path"
               @click="entry.isDir ? fpNavigate(entry.path) : fpSelect(entry)"
               class="flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors w-full"
-              :class="entry.isDir
-                ? 'hover:bg-white/[0.06] text-ink-1'
-                : 'hover:bg-orange/10 hover:text-orange text-ink-2'"
+              :class="entry.isDir ? 'hover:bg-white/[0.06] text-ink-1' : 'hover:bg-orange/10 hover:text-orange text-ink-2'"
             >
               <!-- Icône dossier -->
               <svg v-if="entry.isDir" class="w-4 h-4 text-yellow-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H2v16h20V6H12l-2-2z"/></svg>
@@ -712,7 +710,7 @@ function slugify(str) {
 }
 
 onMounted(async () => {
-  try { series.value = await http.get('/series') } catch {}
+  try { series.value = await http.get('/series?managed=1') } catch {}
   loading.value = false
 })
 
@@ -891,6 +889,42 @@ async function fpNavigate(relPath) {
   }
   fpLoading.value = false
 }
+
+const usedFilePaths = computed(() => {
+  const urls = new Set()
+  const collect = (episodes) => {
+    if (!episodes) return
+    for (const ep of episodes) {
+      // URLs stockées dans sources.{lang}.{qualité}
+      if (ep.sources) {
+        for (const lang of Object.values(ep.sources)) {
+          if (lang && typeof lang === 'object') {
+            for (const url of Object.values(lang)) {
+              if (url) urls.add(url)
+            }
+          }
+        }
+      }
+    }
+  }
+  if (epSerie.value?.seasons?.length) epSerie.value.seasons.forEach(s => collect(s.episodes))
+  collect(epSerie.value?.episodes)
+  // Inclure aussi l'épisode en cours d'édition (non encore sauvegardé)
+  if (epForm.value.url480)  urls.add(epForm.value.url480)
+  if (epForm.value.url720)  urls.add(epForm.value.url720)
+  if (epForm.value.url1080) urls.add(epForm.value.url1080)
+  return urls
+})
+
+function isFileUsed(entry) {
+  if (entry.isDir) return false
+  const url = MEDIA_BASE ? `${MEDIA_BASE}/${entry.path}` : entry.path
+  return usedFilePaths.value.has(url)
+}
+
+const fpVisibleEntries = computed(() =>
+  fpEntries.value.filter(e => e.isDir || !isFileUsed(e))
+)
 
 function openFilePicker(quality) {
   fpQuality.value = quality

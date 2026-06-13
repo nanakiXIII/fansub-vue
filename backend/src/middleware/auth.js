@@ -14,11 +14,14 @@ async function requireAuth(req, res, next) {
 
     if (req.user.isAdmin) {
       req.userPermissions = ['*']
+      req.userSeriesIds   = []
     } else if (req.user.role) {
       const role = await Role.findOne({ name: req.user.role }).lean()
       req.userPermissions = role?.permissions ?? []
+      req.userSeriesIds   = role?.seriesIds   ?? []
     } else {
       req.userPermissions = []
+      req.userSeriesIds   = []
     }
     next()
   } catch {
@@ -50,11 +53,14 @@ async function optionalAuth(req, res, next) {
     if (req.user) {
       if (req.user.isAdmin) {
         req.userPermissions = ['*']
+        req.userSeriesIds   = []
       } else if (req.user.role) {
         const role = await Role.findOne({ name: req.user.role }).lean()
         req.userPermissions = role?.permissions ?? []
+        req.userSeriesIds   = role?.seriesIds   ?? []
       } else {
         req.userPermissions = []
+        req.userSeriesIds   = []
       }
     }
   } catch {}

@@ -1,209 +1,136 @@
+<div align="center">
+
 # FansubZen
 
-Plateforme de fansub en français — diffusion de séries animées avec sous-titres communautaires.
+**Plateforme de fansub communautaire** — catalogue de séries animées avec sous-titres français, espace d'équipe et administration complète.
 
-**Stack :** Vue 3 · Express · MongoDB · Socket.IO · Tailwind CSS
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Vue 3](https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white)](https://vuejs.org/)
+[![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)](https://expressjs.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-6-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-4-010101?logo=socket.io&logoColor=white)](https://socket.io/)
+[![License](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
 
----
-
-## Sommaire
-
-1. [Prérequis](#prérequis)
-2. [Structure du projet](#structure-du-projet)
-3. [Installation en développement](#installation-en-développement)
-4. [Configuration](#configuration)
-5. [Déploiement en production](#déploiement-en-production)
-6. [Reverse proxy Nginx](#reverse-proxy-nginx)
-7. [Gestion des processus avec PM2](#gestion-des-processus-avec-pm2)
-8. [Variables d'environnement — référence complète](#variables-denvironnement--référence-complète)
+</div>
 
 ---
 
-## Prérequis
+## Fonctionnalités
 
-| Outil | Version minimale | Rôle |
-|---|---|---|
-| Node.js | 18 LTS | Backend + build frontend |
-| npm | 9 | Gestionnaire de paquets |
-| MongoDB | 6 | Base de données |
-| ffmpeg | 4 | Extraction de sous-titres (optionnel) |
-| Nginx | — | Reverse proxy (production) |
-| PM2 | — | Gestionnaire de processus (production) |
+| Côté public | Côté administration |
+|---|---|
+| Catalogue filtrable (genre, statut, recherche) | Gestion des séries, épisodes, saisons |
+| Player avec sélection saison / épisode | Rédaction d'actualités (éditeur riche) |
+| Sous-titres intégrés | Modération des commentaires |
+| Actualités & commentaires paginés | Gestion des utilisateurs et grades |
+| Suivi de séries + notifications d'épisodes | Analytics & statistiques de lecture |
+| Profil avec succès débloqués automatiquement | Logs d'audit des actions admin |
+| Chat global en temps réel | Alertes globales et mode bêta |
+| OAuth Google & Discord | Avancement de traduction (en cours) |
+| Mode bêta avec rapports de bugs | API Tester intégré |
 
 ---
 
-## Structure du projet
+## Stack technique
 
 ```
-fansub-vue/
-├── backend/          # API Express + Socket.IO
-│   ├── src/
-│   │   ├── models/       # Schémas Mongoose
-│   │   ├── routes/       # Routes API REST
-│   │   ├── middleware/   # Auth, gestion d'erreurs
-│   │   ├── services/     # Logique métier (audit, achievements…)
-│   │   └── socket.js     # Handlers Socket.IO
-│   ├── uploads/          # Avatars uploadés (généré au démarrage)
-│   └── .env.example
-├── frontend/         # App Vue 3 + Vite
-│   ├── src/
-│   │   ├── components/   # Composants réutilisables
-│   │   ├── views/        # Pages (+ sous-dossier admin/)
-│   │   ├── composables/  # État réactif partagé
-│   │   └── services/     # Appels API HTTP
-│   ├── dist/             # Build de production (généré par vite build)
-│   └── .env.example
-└── README.md
+frontend/   Vue 3 · Vite · Tailwind CSS · Socket.IO client
+backend/    Express · Mongoose · Socket.IO · Passport (OAuth) · JWT
 ```
+
+- **Auth** : JWT access token (15 min) + refresh token (7 j), OAuth Google & Discord
+- **Temps réel** : Socket.IO — chat, notifications, présence, alertes
+- **Permissions** : système de grades avec permissions granulaires (`series.create`, `comments.moderate`, etc.)
+- **Audit** : chaque action admin est tracée (qui, quoi, quand, depuis quelle IP)
 
 ---
 
-## Installation en développement
+## Démarrage rapide (développement)
 
-### 1. Cloner le dépôt
+### Prérequis
+
+| Outil | Version |
+|---|---|
+| Node.js | 18 LTS ou supérieur |
+| npm | 9+ |
+| MongoDB | 6+ (local ou Atlas) |
+| ffmpeg | optionnel — extraction de sous-titres |
+
+### Installation
 
 ```bash
-git clone https://github.com/votre-org/fansub-vue.git
+git clone https://github.com/votre-utilisateur/fansub-vue.git
 cd fansub-vue
 ```
 
-### 2. Configurer le backend
+**Backend**
 
 ```bash
 cd backend
-cp .env.example .env
-# Éditez .env avec vos valeurs (voir section Configuration)
+cp .env.example .env        # puis remplir les valeurs
 npm install
-npm run dev
+npm run dev                 # démarre sur http://localhost:3000
 ```
 
-Le serveur démarre sur `http://localhost:3000`.
-
-### 3. Configurer le frontend
+**Frontend**
 
 ```bash
 cd ../frontend
-cp .env.example .env
-# Éditez .env (VITE_API_BASE_URL=http://localhost:3000/api)
+cp .env.example .env        # VITE_API_BASE_URL=http://localhost:3000/api
 npm install
-npm run dev
+npm run dev                 # démarre sur http://localhost:5173
 ```
 
-L'interface est accessible sur `http://localhost:5173`.
-
----
-
-## Configuration
-
-### Backend — `backend/.env`
-
-Copiez `backend/.env.example` en `backend/.env` et renseignez chaque variable.  
-Voir la [référence complète](#variables-denvironnement--référence-complète) ci-dessous.
-
-Les variables **obligatoires** pour démarrer :
+### Variables obligatoires
 
 ```env
+# backend/.env
 MONGODB_URI=mongodb://localhost:27017/fansub
-JWT_SECRET=<chaîne aléatoire longue>
-JWT_REFRESH_SECRET=<autre chaîne aléatoire longue>
+JWT_SECRET=<générez avec : node -e "console.log(require('crypto').randomBytes(64).toString('hex'))">
+JWT_REFRESH_SECRET=<autre valeur aléatoire>
 CORS_ORIGIN=http://localhost:5173
 FRONTEND_URL=http://localhost:5173
-```
 
-Générez des secrets sécurisés :
-
-```bash
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-```
-
-### Frontend — `frontend/.env`
-
-Copiez `frontend/.env.example` en `frontend/.env` :
-
-```env
+# frontend/.env
 VITE_API_BASE_URL=http://localhost:3000/api
 VITE_SITE_NAME=FansubZen
 ```
+
+Voir les fichiers `.env.example` de chaque sous-dossier pour la liste complète des variables.
 
 ---
 
 ## Déploiement en production
 
-### 1. Préparer le serveur
+### 1. Build du frontend
 
 ```bash
-# Debian / Ubuntu
-sudo apt update && sudo apt install -y nodejs npm nginx
-
-# MongoDB (si pas déjà installé)
-# https://www.mongodb.com/docs/manual/installation/
-
-# PM2 en global
-npm install -g pm2
+cd frontend
+npm run build
+# Fichiers statiques générés dans frontend/dist/
 ```
 
-### 2. Déployer les fichiers
-
-```bash
-git clone https://github.com/votre-org/fansub-vue.git /var/www/fansub
-cd /var/www/fansub
-```
-
-### 3. Installer les dépendances backend
+### 2. Lancer le backend avec PM2
 
 ```bash
 cd backend
-cp .env.example .env
-nano .env   # remplir toutes les valeurs de production
 npm install --omit=dev
+pm2 start src/server.js --name fansub-api
+pm2 save && pm2 startup
 ```
 
-### 4. Builder le frontend
-
-```bash
-cd ../frontend
-cp .env.example .env
-nano .env   # VITE_API_BASE_URL=https://votre-domaine.fr/api
-npm install
-npm run build
-# Les fichiers statiques sont dans frontend/dist/
-```
-
-### 5. Créer le dossier des uploads
-
-```bash
-mkdir -p /var/www/fansub/backend/uploads/avatars
-chown -R www-data:www-data /var/www/fansub/backend/uploads
-```
-
----
-
-## Reverse proxy Nginx
-
-Créez `/etc/nginx/sites-available/fansub` :
+### 3. Nginx — reverse proxy
 
 ```nginx
 server {
-    listen 80;
-    server_name votre-domaine.fr www.votre-domaine.fr;
-
-    # Redirige vers HTTPS
-    return 301 https://$host$request_uri;
-}
-
-server {
     listen 443 ssl http2;
-    server_name votre-domaine.fr www.votre-domaine.fr;
+    server_name votre-domaine.fr;
 
-    # Certificat SSL (Let's Encrypt recommandé)
-    ssl_certificate     /etc/letsencrypt/live/votre-domaine.fr/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/votre-domaine.fr/privkey.pem;
-
-    # Frontend (fichiers statiques Vue)
     root /var/www/fansub/frontend/dist;
     index index.html;
 
-    # SPA — toutes les routes inconnues → index.html
+    # SPA — Vue Router
     location / {
         try_files $uri $uri/ /index.html;
     }
@@ -225,78 +152,57 @@ server {
         proxy_set_header   Upgrade    $http_upgrade;
         proxy_set_header   Connection "upgrade";
         proxy_set_header   Host       $host;
-        proxy_set_header   X-Real-IP  $remote_addr;
         proxy_cache_bypass $http_upgrade;
     }
 
-    # Uploads (avatars)
+    # Avatars uploadés
     location /uploads/ {
         alias /var/www/fansub/backend/uploads/;
         expires 7d;
-        access_log off;
-    }
-
-    # Médias vidéo (optionnel — si MEDIA_ROOT est configuré)
-    location /media/ {
-        alias /chemin/vers/vos/videos/;
-        expires 1d;
-        access_log off;
     }
 }
 ```
 
-Activer le site :
-
-```bash
-sudo ln -s /etc/nginx/sites-available/fansub /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-### HTTPS avec Let's Encrypt
+HTTPS avec Let's Encrypt :
 
 ```bash
 sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d votre-domaine.fr -d www.votre-domaine.fr
+sudo certbot --nginx -d votre-domaine.fr
+```
+
+### 4. Mise à jour
+
+```bash
+git pull
+cd backend  && npm install --omit=dev && pm2 reload fansub-api
+cd frontend && npm install && npm run build
 ```
 
 ---
 
-## Gestion des processus avec PM2
+## Structure du projet
 
-### Démarrer le backend
-
-```bash
-cd /var/www/fansub/backend
-pm2 start src/server.js --name fansub-api
-pm2 save
-pm2 startup   # génère la commande pour le démarrage automatique
 ```
-
-### Commandes utiles
-
-```bash
-pm2 status              # état de tous les processus
-pm2 logs fansub-api     # logs en temps réel
-pm2 restart fansub-api  # redémarrer après un changement
-pm2 reload fansub-api   # rechargement sans coupure (zero-downtime)
-```
-
-### Mise à jour du projet
-
-```bash
-cd /var/www/fansub
-git pull
-
-# Backend
-cd backend && npm install --omit=dev
-pm2 reload fansub-api
-
-# Frontend
-cd ../frontend
-npm install
-npm run build
-# Nginx sert les nouveaux fichiers immédiatement depuis dist/
+fansub-vue/
+├── backend/
+│   ├── src/
+│   │   ├── models/       # Schémas Mongoose (User, Series, Comment, AuditLog…)
+│   │   ├── routes/       # Routes API REST (24 fichiers)
+│   │   ├── middleware/   # requireAuth, requireAdmin, requirePermission, optionalAuth
+│   │   ├── services/     # audit.js, achievements.js
+│   │   └── socket.js     # Chat, notifications, présence temps réel
+│   ├── uploads/          # Avatars & images uploadés
+│   └── .env.example
+├── frontend/
+│   ├── src/
+│   │   ├── components/   # Composants (AppNavbar, ChatWidget, CommentSection…)
+│   │   ├── views/
+│   │   │   └── admin/    # 15+ pages d'administration
+│   │   ├── composables/  # useAuth, useSettings, useChat, useToast, useSocket
+│   │   └── services/     # http.js (JWT + refresh auto), series.js, news.js…
+│   └── .env.example
+├── .gitignore
+└── README.md
 ```
 
 ---
@@ -307,47 +213,51 @@ npm run build
 
 | Variable | Obligatoire | Défaut | Description |
 |---|---|---|---|
-| `PORT` | Non | `3000` | Port d'écoute du serveur Express |
-| `MONGODB_URI` | **Oui** | — | URI de connexion MongoDB |
-| `JWT_SECRET` | **Oui** | — | Secret de signature des tokens d'accès |
-| `JWT_EXPIRES_IN` | Non | `15m` | Durée de vie du token d'accès |
-| `JWT_REFRESH_SECRET` | **Oui** | — | Secret de signature des refresh tokens (7 jours) |
-| `CORS_ORIGIN` | **Oui** | — | URL du frontend autorisée par CORS |
-| `FRONTEND_URL` | **Oui** | — | URL du frontend pour les redirections OAuth |
-| `OAUTH_CALLBACK_BASE` | Non | valeur de `FRONTEND_URL` | Base URL pour les callbacks OAuth |
-| `GOOGLE_CLIENT_ID` | Non | — | Client ID Google OAuth (laisser vide pour désactiver) |
-| `GOOGLE_CLIENT_SECRET` | Non | — | Client Secret Google OAuth |
-| `DISCORD_CLIENT_ID` | Non | — | Client ID Discord OAuth (laisser vide pour désactiver) |
-| `DISCORD_CLIENT_SECRET` | Non | — | Client Secret Discord OAuth |
-| `MEDIA_ROOT` | Non | — | Chemin absolu vers le dossier des fichiers vidéo |
-| `FFMPEG_PATH` | Non | `ffmpeg` (PATH) | Chemin vers l'exécutable ffmpeg |
+| `PORT` | Non | `3000` | Port d'écoute Express |
+| `MONGODB_URI` | **Oui** | — | URI MongoDB |
+| `JWT_SECRET` | **Oui** | — | Secret access token (15 min) |
+| `JWT_EXPIRES_IN` | Non | `15m` | Durée de vie access token |
+| `JWT_REFRESH_SECRET` | **Oui** | — | Secret refresh token (7 j) |
+| `CORS_ORIGIN` | **Oui** | — | URL du frontend (CORS) |
+| `FRONTEND_URL` | **Oui** | — | URL frontend (redirections OAuth) |
+| `OAUTH_CALLBACK_BASE` | Non | `FRONTEND_URL` | Base URL callbacks OAuth |
+| `GOOGLE_CLIENT_ID` | Non | — | OAuth Google (vide = désactivé) |
+| `GOOGLE_CLIENT_SECRET` | Non | — | Secret OAuth Google |
+| `DISCORD_CLIENT_ID` | Non | — | OAuth Discord (vide = désactivé) |
+| `DISCORD_CLIENT_SECRET` | Non | — | Secret OAuth Discord |
+| `MEDIA_ROOT` | Non | — | Chemin absolu des fichiers vidéo |
+| `FFMPEG_PATH` | Non | `ffmpeg` | Chemin vers ffmpeg |
 
 ### Frontend (`frontend/.env`)
 
 | Variable | Obligatoire | Défaut | Description |
 |---|---|---|---|
-| `VITE_API_BASE_URL` | **Oui** | — | URL de base de l'API (ex: `https://votre-domaine.fr/api`) |
-| `VITE_MEDIA_BASE_URL` | Non | valeur de `VITE_API_BASE_URL` | URL de base pour les fichiers médias |
-| `VITE_SITE_NAME` | Non | `FansubZen` | Nom du site (navbar, onglets) |
-| `VITE_SITE_TAGLINE` | Non | — | Slogan affiché sur la page d'accueil |
-| `VITE_SITE_YEAR` | Non | `2026` | Année dans le footer |
-| `VITE_TMDB_API_KEY` | Non | — | Clé API TMDB pour la recherche de métadonnées anime |
-| `VITE_DISCORD_URL` | Non | — | URL d'invitation Discord (footer) |
-| `VITE_TWITTER_URL` | Non | — | URL Twitter/X (footer) |
-| `VITE_GITHUB_URL` | Non | — | URL GitHub (footer) |
+| `VITE_API_BASE_URL` | **Oui** | — | URL de l'API (`https://domaine.fr/api`) |
+| `VITE_MEDIA_BASE_URL` | Non | `VITE_API_BASE_URL` | URL des médias |
+| `VITE_SITE_NAME` | Non | `FansubZen` | Nom du site |
+| `VITE_SITE_TAGLINE` | Non | — | Slogan page d'accueil |
+| `VITE_SITE_YEAR` | Non | `2026` | Année footer |
+| `VITE_TMDB_API_KEY` | Non | — | Clé TMDB (métadonnées anime) |
+| `VITE_DISCORD_URL` | Non | — | Lien Discord (footer) |
+| `VITE_TWITTER_URL` | Non | — | Lien Twitter/X (footer) |
+| `VITE_GITHUB_URL` | Non | — | Lien GitHub (footer) |
 
 ---
 
-## Fonctionnalités principales
+## Contribuer
 
-- **Catalogue** de séries avec filtres par genre, statut, recherche
-- **Player** avec sélection de saison/épisode
-- **Système de comptes** (inscription, connexion, OAuth Google/Discord)
-- **Grades et permissions** granulaires pour les membres de l'équipe
-- **Succès** débloqués automatiquement selon l'activité
-- **Chat** global en temps réel (Socket.IO)
-- **Notifications** à la sortie d'un épisode pour les séries suivies
-- **Commentaires** paginés avec modération
-- **Actualités** avec éditeur riche
-- **Administration** complète : séries, news, utilisateurs, grades, analytics, audit…
-- **Mode bêta** avec rapports de bugs et maintenance
+Les contributions sont les bienvenues. Pour proposer une modification :
+
+1. Forkez le dépôt
+2. Créez une branche (`git checkout -b feature/ma-fonctionnalite`)
+3. Commitez vos changements (`git commit -m "feat: description courte"`)
+4. Poussez la branche (`git push origin feature/ma-fonctionnalite`)
+5. Ouvrez une Pull Request
+
+Pour signaler un bug, utilisez les [Issues GitHub](../../issues) en précisant les étapes pour reproduire le problème, votre environnement (OS, Node.js, navigateur) et le message d'erreur éventuel.
+
+---
+
+## Licence
+
+Ce projet est sous licence [MIT](LICENSE).

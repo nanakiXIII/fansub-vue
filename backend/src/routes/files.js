@@ -1,12 +1,12 @@
 const express = require('express')
 const fs      = require('fs')
 const path    = require('path')
-const { requireAuth, requireAdmin } = require('../middleware/auth')
+const { requireAuth, requirePermission } = require('../middleware/auth')
 
 const router = express.Router()
 
 // GET /api/files?path=relative/path
-router.get('/', requireAuth, requireAdmin, (req, res) => {
+router.get('/', requireAuth, requirePermission('files.browse'), (req, res) => {
   const mediaRoot = process.env.MEDIA_ROOT
   if (!mediaRoot) return res.status(503).json({ error: 'MEDIA_ROOT non configuré dans .env' })
 

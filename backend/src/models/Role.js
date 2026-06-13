@@ -7,6 +7,7 @@ const roleSchema = new mongoose.Schema({
   level:       { type: Number, default: 0 },
   description: { type: String, default: '' },
   permissions: [{ type: String }],
+  seriesIds:   [{ type: String }], // vide = toutes les séries autorisées
 }, { timestamps: true })
 
 module.exports = mongoose.model('Role', roleSchema)
