@@ -160,6 +160,9 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { http } from '@/services/http.js'
+import { useDialog } from '@/composables/useDialog.js'
+
+const { showAlert, showConfirm } = useDialog()
 import { useAchievementToast } from '@/composables/useAchievementToast.js'
 
 const { show } = useAchievementToast()
@@ -248,11 +251,11 @@ function openEdit(item) {
 }
 
 async function deleteItem(item) {
-  if (!confirm(`Supprimer « ${item.name} » ? Les utilisateurs qui ont ce succès le perdront.`)) return
+  if (!await showConfirm(`Supprimer « ${item.name} » ? Les utilisateurs qui ont ce succès le perdront.`)) return
   try {
     await http.delete(`/achievements/${item._id}`)
     items.value = items.value.filter(x => x._id !== item._id)
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 
 async function submitForm() {

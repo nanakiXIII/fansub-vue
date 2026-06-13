@@ -250,6 +250,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { http } from '@/services/http.js'
+import { useDialog } from '@/composables/useDialog.js'
+
+const { showConfirm } = useDialog()
 import { useBeta } from '@/composables/useBeta.js'
 
 const { betaEnabled, setBeta, maintenanceEnabled, maintenanceAllowedRoles, setMaintenance, setAllowedRoles } = useBeta()
@@ -332,7 +335,7 @@ async function updateBug(id, patch) {
 }
 
 async function deleteBug(id) {
-  if (!confirm('Supprimer ce rapport ?')) return
+  if (!await showConfirm('Supprimer ce rapport ?')) return
   try {
     await http.delete(`/bugs/${id}`)
     bugs.value = bugs.value.filter(b => b._id !== id)

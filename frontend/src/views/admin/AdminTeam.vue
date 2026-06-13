@@ -202,6 +202,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { http } from '@/services/http.js'
+import { useDialog } from '@/composables/useDialog.js'
+
+const { showAlert, showConfirm } = useDialog()
 
 const members        = ref([])
 const loading        = ref(true)
@@ -298,15 +301,15 @@ async function toggleActive(m) {
     const updated = await http.put(`/team/${m._id}`, { active: !m.active })
     const idx = members.value.findIndex(x => x._id === m._id)
     if (idx !== -1) members.value[idx] = updated
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 
 async function deleteMember(m) {
-  if (!confirm(`Retirer « ${m.name} » de l'équipe ?`)) return
+  if (!await showConfirm(`Retirer « ${m.name} » de l'équipe ?`)) return
   try {
     await http.delete(`/team/${m._id}`)
     members.value = members.value.filter(x => x._id !== m._id)
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 
 async function submitForm() {

@@ -176,7 +176,7 @@
                 />
                 <span class="text-[10px] text-ink-3">
                   Utilisé dans l'URL : /serie/<strong class="text-ink-2">{{ form.id || '...' }}</strong>
-                  <span v-if="editingId" class="text-ink-3"> · non modifiable</span>
+                  <span v-if="editingId" class="text-ink-3"> &middot; non modifiable</span>
                 </span>
               </label>
 
@@ -611,6 +611,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { http } from '@/services/http.js'
+import { useDialog } from '@/composables/useDialog.js'
+
+const { showAlert, showConfirm } = useDialog()
 
 const TMDB_BASE = 'https://api.themoviedb.org/3'
 const TMDB_IMG  = 'https://image.tmdb.org/t/p/'
@@ -1009,9 +1012,9 @@ function addSeason() {
   saveEpisodes()
 }
 
-function deleteSeason(idx) {
+async function deleteSeason(idx) {
   const s = epSerie.value.seasons[idx]
-  if (!confirm(`Supprimer la saison "${s.label}" et ses ${s.episodes?.length ?? 0} épisode(s) ?`)) return
+  if (!await showConfirm(`Supprimer la saison "${s.label}" et ses ${s.episodes?.length ?? 0} épisode(s) ?`)) return
   epSerie.value.seasons.splice(idx, 1)
   saveEpisodes()
 }
@@ -1168,15 +1171,15 @@ async function toggleVisible(s) {
     const updated = await http.put(`/series/${s.id}`, { visible: s.visible === false })
     const idx = series.value.findIndex(x => x.id === s.id)
     if (idx !== -1) series.value[idx] = { ...series.value[idx], visible: updated.visible }
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 
 async function deleteSerie(s) {
-  if (!confirm(`Supprimer « ${s.title} » ? Cette action est irréversible.`)) return
+  if (!await showConfirm(`Supprimer « ${s.title} » ? Cette action est irréversible.`)) return
   try {
     await http.delete(`/series/${s.id}`)
     series.value = series.value.filter(x => x.id !== s.id)
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 </script>
 

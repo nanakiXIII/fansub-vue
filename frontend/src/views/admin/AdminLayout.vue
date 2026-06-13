@@ -58,12 +58,15 @@
       <RouterView />
     </main>
   </div>
+
+  <AdminDialog />
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSettings } from '@/composables/useSettings.js'
+import AdminDialog from '@/components/AdminDialog.vue'
 
 const route    = useRoute()
 const settings = useSettings()

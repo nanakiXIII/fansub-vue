@@ -213,6 +213,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { http } from '@/services/http.js'
+import { useDialog } from '@/composables/useDialog.js'
+
+const { showAlert, showConfirm } = useDialog()
 
 const DEFAULT_STEPS = ['Brut', 'Traduction', 'Correction', 'Timing', 'Encodage', 'Mise en ligne']
 
@@ -346,16 +349,16 @@ async function toggleVisible(item) {
     const updated = await http.put(`/inprogress/${item._id}`, { visible: !item.visible })
     const idx = items.value.findIndex(x => x._id === item._id)
     if (idx !== -1) items.value[idx] = updated
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 
 async function deleteItem(item) {
   const title = serieMap.value[item.serieId]?.title ?? item.serieId
-  if (!confirm(`Supprimer l'entrée pour « ${title} » ?`)) return
+  if (!await showConfirm(`Supprimer l'entrée pour « ${title} » ?`)) return
   try {
     await http.delete(`/inprogress/${item._id}`)
     items.value = items.value.filter(x => x._id !== item._id)
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 
 async function submitForm() {

@@ -193,6 +193,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { http } from '@/services/http.js'
+import { useDialog } from '@/composables/useDialog.js'
+
+const { showAlert, showConfirm } = useDialog()
 
 const roles       = ref([])
 const allSeries   = ref([])
@@ -372,11 +375,11 @@ function openEdit(r) {
 }
 
 async function deleteRole(r) {
-  if (!confirm(`Supprimer le grade « ${r.label} » ? Il sera retiré de tous les utilisateurs.`)) return
+  if (!await showConfirm(`Supprimer le grade « ${r.label} » ? Il sera retiré de tous les utilisateurs.`)) return
   try {
     await http.delete(`/roles/${r._id}`)
     roles.value = roles.value.filter(x => x._id !== r._id)
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 
 async function submitForm() {

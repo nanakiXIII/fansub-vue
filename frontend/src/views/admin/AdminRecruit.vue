@@ -160,6 +160,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { http } from '@/services/http.js'
+import { useDialog } from '@/composables/useDialog.js'
+
+const { showAlert, showConfirm } = useDialog()
 
 const roles     = ref([])
 const loading   = ref(true)
@@ -261,15 +264,15 @@ async function toggleOpen(r) {
     const updated = await http.put(`/recruit/${r._id}`, { open: !r.open })
     const idx = roles.value.findIndex(x => x._id === r._id)
     if (idx !== -1) roles.value[idx] = updated
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 
 async function deleteRole(r) {
-  if (!confirm(`Supprimer « ${r.title} » ?`)) return
+  if (!await showConfirm(`Supprimer « ${r.title} » ?`)) return
   try {
     await http.delete(`/recruit/${r._id}`)
     roles.value = roles.value.filter(x => x._id !== r._id)
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 
 async function submitForm() {

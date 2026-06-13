@@ -61,6 +61,9 @@
 import { ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { http } from '@/services/http.js'
+import { useDialog } from '@/composables/useDialog.js'
+
+const { showAlert, showConfirm } = useDialog()
 
 const articles = ref([])
 const loading  = ref(true)
@@ -79,14 +82,14 @@ async function togglePublished(a) {
   try {
     const updated = await http.put(`/news/${a._id}`, { published: !a.published })
     a.published = updated.published
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 
 async function deleteArticle(a) {
-  if (!confirm(`Supprimer « ${a.title} » ?`)) return
+  if (!await showConfirm(`Supprimer « ${a.title} » ?`)) return
   try {
     await http.delete(`/news/${a._id}`)
     articles.value = articles.value.filter(x => x._id !== a._id)
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 </script>

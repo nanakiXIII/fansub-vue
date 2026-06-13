@@ -78,6 +78,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { http } from '@/services/http.js'
+import { useDialog } from '@/composables/useDialog.js'
+
+const { showAlert, showConfirm } = useDialog()
 
 const comments  = ref([])
 const loading   = ref(true)
@@ -117,7 +120,7 @@ async function approve(c) {
     await http.patch(`/comments/${c._id}/approve`)
     const idx = comments.value.findIndex(x => x._id === c._id)
     if (idx !== -1) comments.value[idx] = { ...comments.value[idx], status: 'approved' }
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 
 async function reject(c) {
@@ -125,14 +128,14 @@ async function reject(c) {
     await http.patch(`/comments/${c._id}/reject`)
     const idx = comments.value.findIndex(x => x._id === c._id)
     if (idx !== -1) comments.value[idx] = { ...comments.value[idx], status: 'rejected' }
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 
 async function deleteComment(c) {
-  if (!confirm('Supprimer ce commentaire ?')) return
+  if (!await showConfirm('Supprimer ce commentaire ?')) return
   try {
     await http.delete(`/comments/${c._id}`)
     comments.value = comments.value.filter(x => x._id !== c._id)
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 </script>

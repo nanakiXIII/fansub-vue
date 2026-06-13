@@ -97,8 +97,9 @@
           :title="u._id === currentUserId ? 'Impossible de modifier ses propres droits' : (u.isAdmin ? 'Révoquer admin' : 'Passer admin')"
         >{{ u.isAdmin ? 'Admin' : 'Membre' }}</button>
 
-        <!-- Supprimer -->
+        <!-- Supprimer (admins seulement) -->
         <button
+          v-if="settings.isAdmin"
           @click="deleteUser(u)"
           :disabled="u._id === currentUserId"
           class="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-ink-3 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -115,6 +116,9 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { http } from '@/services/http.js'
 import { useSettings } from '@/composables/useSettings.js'
+import { useDialog } from '@/composables/useDialog.js'
+
+const { showAlert, showConfirm } = useDialog()
 
 const users      = ref([])
 const roles      = ref([])
@@ -170,7 +174,7 @@ async function assignRole(u, roleName) {
     const res = await http.patch(`/auth/users/${u._id}/role`, { role: roleName })
     const idx = users.value.findIndex(x => x._id === u._id)
     if (idx !== -1) users.value[idx] = { ...users.value[idx], role: res.role }
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 
 function initials(name) {
@@ -191,14 +195,14 @@ async function toggleAdmin(u) {
     const res = await http.patch(`/auth/users/${u._id}/admin`)
     const idx = users.value.findIndex(x => x._id === u._id)
     if (idx !== -1) users.value[idx] = { ...users.value[idx], isAdmin: res.isAdmin }
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 
 async function deleteUser(u) {
-  if (!confirm(`Supprimer le compte de « ${u.username} » ? Cette action est irréversible.`)) return
+  if (!await showConfirm(`Supprimer le compte de « ${u.username} » ? Cette action est irréversible.`)) return
   try {
     await http.delete(`/auth/users/${u._id}`)
     users.value = users.value.filter(x => x._id !== u._id)
-  } catch (e) { alert(e.message) }
+  } catch (e) { showAlert(e.message) }
 }
 </script>
