@@ -19,7 +19,7 @@
           v-for="link in navLinks"
           :key="link.to"
           :to="link.to"
-          class="text-[12px] font-medium text-ink-2 px-3 h-14 flex items-center border-b-2 border-transparent hover:text-white transition-colors"
+          class="text-[14px] font-medium text-ink-2 px-3 h-14 flex items-center border-b-2 border-transparent hover:text-white transition-colors"
           active-class="!text-white !border-orange"
         >
           {{ link.label }}
@@ -50,7 +50,7 @@
       <div class="hidden lg:block relative shrink-0" ref="profileRef">
         <button
           @click="profileOpen = !profileOpen"
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-medium transition-colors"
           :class="profileOpen ? 'bg-bg-2 text-white' : 'text-ink-2 hover:bg-bg-2 hover:text-white'"
         >
           <!-- Avatar ou icône -->
