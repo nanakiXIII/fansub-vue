@@ -13,6 +13,8 @@ import ProfilePage     from './views/ProfilePage.vue'
 import PlayerPage      from './views/PlayerPage.vue'
 import ReleasesPage    from './views/ReleasesPage.vue'
 import ActualitesPage  from './views/ActualitesPage.vue'
+import ClassementPage  from './views/ClassementPage.vue'
+import PublicProfilePage from './views/PublicProfilePage.vue'
 import LoginPage          from './views/LoginPage.vue'
 import RegisterPage       from './views/RegisterPage.vue'
 import AuthCallbackPage   from './views/AuthCallbackPage.vue'
@@ -48,6 +50,8 @@ function buildLocationData(route) {
   if (path === '/sorties')        return { type: 'releases',  path, label: 'Dernières sorties' }
   if (path === '/actualites')    return { type: 'news',      path, label: 'Actualités' }
   if (path === '/equipe')         return { type: 'team',     path, label: 'Équipe' }
+  if (path === '/classement')     return { type: 'leaderboard', path, label: 'Classement' }
+  if (path.startsWith('/profil/')) return { type: 'public-profile', path, label: 'Profil', userId: params.id }
   if (path === '/profil')         return { type: 'profile',  path, label: 'Profil' }
   if (path.startsWith('/admin'))  return { type: 'admin',    path, label: 'Administration' }
   if (path.startsWith('/watch/')) return { type: 'episode',  path, label: `${params.id} — Ép. ${params.ep}`, serieId: params.id, epNum: params.ep }
@@ -69,6 +73,7 @@ function classifyPath(path) {
   if (path.startsWith('/watch/'))      return { pageType: 'player',    pageId: path.split('/')[2] }
   if (path === '/catalogue')           return { pageType: 'catalogue' }
   if (path === '/equipe')              return { pageType: 'equipe' }
+  if (path === '/classement')          return { pageType: 'classement' }
   if (path === '/recrutement')         return { pageType: 'recrutement' }
   return { pageType: 'other' }
 }
@@ -98,8 +103,10 @@ const router = createRouter({
     { path: '/actualites',         component: ActualitesPage, meta: { title: 'Actualités'      } },
     { path: '/chat',               component: ChatPage,      meta: { title: 'Chat'            } },
     { path: '/equipe',             component: TeamPage,      meta: { title: 'Équipe'          } },
+    { path: '/classement',         component: ClassementPage, meta: { title: 'Classement'     } },
     { path: '/recrutement',        component: RecruitPage,   meta: { title: 'Recrutement'     } },
     { path: '/profil',             component: ProfilePage,   meta: { title: 'Profil'          } },
+    { path: '/profil/:id',         component: PublicProfilePage, meta: { title: 'Profil'      } },
     { path: '/connexion',          component: LoginPage,        meta: { title: 'Connexion'   } },
     { path: '/inscription',        component: RegisterPage,     meta: { title: 'Inscription' } },
     { path: '/auth/callback',      component: AuthCallbackPage, meta: { title: null          } },
@@ -148,3 +155,10 @@ router.afterEach((to) => {
 })
 
 createApp(App).use(router).mount('#app')
+
+// PWA : service worker uniquement en prod (évite d'interférer avec le HMR de Vite en dev)
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  })
+}

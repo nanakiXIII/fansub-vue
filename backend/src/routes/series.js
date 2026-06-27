@@ -8,6 +8,7 @@ const Follow       = require('../models/Follow')
 const Notification = require('../models/Notification')
 const { requireAuth, requireAdmin, requirePermission, optionalAuth } = require('../middleware/auth')
 const { logAudit } = require('../services/audit')
+const { findEpisode } = require('../utils/episodeLookup')
 
 const router = express.Router()
 
@@ -87,8 +88,13 @@ router.put('/:id', requireAuth, requirePermission('series.edit'), async (req, re
     // Snapshot des épisodes existants avant mise à jour
     const before = await Series.findOne({ id: req.params.id }).lean()
     const existingKeys = new Set()
+    const existingEpMap = new Map() // `slug:num` → { title, visible }
     if (before) {
-      const addEps = (eps, slug) => eps?.forEach(e => existingKeys.add(`${slug}:${e.num}`))
+      const addEps = (eps, slug) => eps?.forEach(e => {
+        const key = `${slug}:${e.num}`
+        existingKeys.add(key)
+        existingEpMap.set(key, { title: e.title, visible: e.visible })
+      })
       if (before.seasons?.length) {
         before.seasons.forEach(s => addEps(s.episodes, s.slug))
       } else {
@@ -125,13 +131,7 @@ router.put('/:id', requireAuth, requirePermission('series.edit'), async (req, re
 
     for (const r of newReleases) {
       // Titre de l'épisode depuis la série mise à jour
-      let epTitle = null
-      if (serie.seasons?.length) {
-        const season = serie.seasons.find(s => s.slug === r.seasonSlug)
-        epTitle = season?.episodes?.find(e => e.num === r.epNum)?.title ?? null
-      } else {
-        epTitle = serie.episodes?.find(e => e.num === r.epNum)?.title ?? null
-      }
+      const epTitle = findEpisode(serie, r.seasonSlug, r.epNum)?.title ?? null
 
       const release = await Release.findOneAndUpdate(
         { serieId: r.serieId, seasonSlug: r.seasonSlug, epNum: r.epNum },
@@ -156,7 +156,35 @@ router.put('/:id', requireAuth, requirePermission('series.edit'), async (req, re
       }
     }
 
-    // Log de l'action avec détail si visibilité changée
+    // Détecte suppressions et changements de visibilité des épisodes
+    const newEpMap = new Map()
+    const collectEps = (eps, slug) => eps?.forEach(e => newEpMap.set(`${slug}:${e.num}`, { title: e.title, visible: e.visible }))
+    if (serie.seasons?.length) {
+      serie.seasons.forEach(s => collectEps(s.episodes, s.slug))
+    } else {
+      collectEps(serie.episodes, 'saison-1')
+    }
+
+    for (const [key, prev] of existingEpMap) {
+      if (!newEpMap.has(key)) {
+        const [seasonSlug, epNum] = key.split(':')
+        logAudit(req, 'episode.delete', serie.id, { title: serie.title, seasonSlug, epNum: Number(epNum), epTitle: prev.title })
+      } else {
+        const curr = newEpMap.get(key)
+        if (Boolean(prev.visible) !== Boolean(curr.visible)) {
+          const [seasonSlug, epNum] = key.split(':')
+          logAudit(req, 'episode.visibility', serie.id, { title: serie.title, seasonSlug, epNum: Number(epNum), epTitle: curr.title, visible: curr.visible !== false })
+        }
+      }
+    }
+    for (const [key, curr] of newEpMap) {
+      if (!existingKeys.has(key)) {
+        const [seasonSlug, epNum] = key.split(':')
+        logAudit(req, 'episode.add', serie.id, { title: serie.title, seasonSlug, epNum: Number(epNum), epTitle: curr.title })
+      }
+    }
+
+    // Log de l'action série avec détail si visibilité changée
     const details = { title: serie.title }
     if (before && req.body.visible !== undefined && before.visible !== req.body.visible) {
       details.visible = req.body.visible

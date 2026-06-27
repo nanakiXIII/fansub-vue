@@ -170,6 +170,9 @@ const ACTION_LABELS = {
   'series.create':      'Série créée',
   'series.update':      'Série modifiée',
   'series.delete':      'Série supprimée',
+  'episode.add':        'Épisode ajouté',
+  'episode.delete':     'Épisode supprimé',
+  'episode.visibility': 'Visibilité épisode',
 }
 function actionLabel(a) { return ACTION_LABELS[a] ?? a }
 
@@ -188,6 +191,9 @@ const ACTION_STYLES = {
   'series.create':      'bg-emerald-500/15 text-emerald-400',
   'series.update':      'bg-blue-500/15 text-blue-400',
   'series.delete':      'bg-red-500/15 text-red-400',
+  'episode.add':        'bg-emerald-500/15 text-emerald-400',
+  'episode.delete':     'bg-red-500/15 text-red-400',
+  'episode.visibility': 'bg-yellow-500/15 text-yellow-400',
 }
 function actionStyle(a) { return ACTION_STYLES[a] ?? 'bg-white/[0.08] text-ink-2' }
 

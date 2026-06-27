@@ -2,6 +2,7 @@ const express = require('express')
 const { body, validationResult } = require('express-validator')
 const News    = require('../models/News')
 const { emit } = require('../socket')
+const { notifyNewsPublished } = require('../services/discordNotify')
 const { requireAuth, requirePermission, optionalAuth } = require('../middleware/auth')
 
 const router = express.Router()
@@ -46,7 +47,10 @@ router.post('/',
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
     try {
       const article = await News.create({ ...req.body, author: req.user.username })
-      if (article.published) emit('new:news', article.toObject())
+      if (article.published) {
+        emit('new:news', article.toObject())
+        notifyNewsPublished(article).catch(() => {})
+      }
       res.status(201).json(article)
     } catch (err) { next(err) }
   }
@@ -62,8 +66,11 @@ router.put('/:id', requireAuth, requirePermission('news.edit'), async (req, res,
       { new: true, runValidators: true }
     )
     if (!article) return res.status(404).json({ error: 'Article introuvable' })
-    // Émettre uniquement si l'article vient d'être publié
-    if (article.published && !prev?.published) emit('new:news', article.toObject())
+    // Émettre/notifier uniquement si l'article vient d'être publié
+    if (article.published && !prev?.published) {
+      emit('new:news', article.toObject())
+      notifyNewsPublished(article).catch(() => {})
+    }
     res.json(article)
   } catch (err) { next(err) }
 })

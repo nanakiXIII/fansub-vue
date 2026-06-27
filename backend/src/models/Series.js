@@ -41,6 +41,7 @@ const seriesSchema = new mongoose.Schema({
   tmdbId:        { type: Number,  default: null },
   isSimulcast:   { type: Boolean, default: false },
   visible:       { type: Boolean, default: true },
+  mediaPath:     { type: String,  default: '' },
 }, { timestamps: true })
 
 module.exports = mongoose.model('Series', seriesSchema)

@@ -25,6 +25,8 @@
         <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity">
           <svg class="w-5 h-5 fill-white" viewBox="0 0 16 16"><path d="M3 2l10 6-10 6V2z"/></svg>
         </div>
+        <!-- Badge NEW sur l'image -->
+        <span v-if="ep.isNew" class="absolute top-1 left-1 badge badge-new z-10" style="font-size:8px;padding:1px 4px">NEW</span>
       </div>
 
       <!-- Info -->
@@ -59,7 +61,6 @@
 
       <!-- Actions -->
       <div class="flex items-center gap-1.5 shrink-0">
-        <span v-if="ep.isNew" class="badge badge-new hidden sm:inline-flex">NEW</span>
 
         <!-- Regarder / Reprendre -->
         <RouterLink
@@ -81,7 +82,7 @@
         </RouterLink>
 
         <!-- Télécharger + qualité -->
-        <div v-if="getDownloads(ep).length" class="relative">
+        <div v-if="!compact && getDownloads(ep).length" class="relative">
           <button
             @click.stop="openDropdown = openDropdown === ep.num ? null : ep.num"
             class="btn-outline text-[11px] py-1.5 px-2.5 gap-1"

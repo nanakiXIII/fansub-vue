@@ -70,7 +70,23 @@ async function sanitizeUser(user) {
     const ach = await Achievement.findById(user.activeTitleId).select('rewardTitle color').lean()
     if (ach?.rewardTitle) activeTitle = { label: ach.rewardTitle, color: ach.color ?? null }
   }
-  return { id: user._id, username: user.username, email: user.email, isAdmin: user.isAdmin, avatar: user.avatar, role: user.role ?? null, roleLabel, roleColor, activeTitle, permissions }
+  return { id: user._id, username: user.username, email: user.email, isAdmin: user.isAdmin, avatar: user.avatar, role: user.role ?? null, roleLabel, roleColor, activeTitle, permissions, socials: user.socials ?? {}, favoriteMedia: user.favoriteMedia ?? [] }
+}
+
+const SOCIAL_KEYS = ['discord', 'psn', 'xbox', 'switch', 'steam', 'myanimelist']
+
+function sanitizeFavoriteMedia(list) {
+  if (!Array.isArray(list)) return undefined
+  return list
+    .filter(m => m && Number.isFinite(Number(m.tmdbId)) && ['movie', 'tv'].includes(m.mediaType) && m.title)
+    .slice(0, 6)
+    .map(m => ({
+      tmdbId:     Number(m.tmdbId),
+      mediaType:  m.mediaType,
+      title:      String(m.title).slice(0, 200),
+      posterPath: String(m.posterPath ?? '').slice(0, 300),
+      year:       String(m.year ?? '').slice(0, 8),
+    }))
 }
 
 // POST /api/auth/register
@@ -86,7 +102,12 @@ router.post('/register',
       const user = await User.create({ username, email, password })
       res.status(201).json({ token: signToken(user._id), refreshToken: signRefreshToken(user._id), user: await sanitizeUser(user) })
     } catch (err) {
-      if (err.code === 11000) return res.status(409).json({ error: 'Pseudo ou email déjà utilisé' })
+      if (err.code === 11000) {
+        const field = Object.keys(err.keyPattern ?? {})[0]
+        if (field === 'username') return res.status(409).json({ error: 'Ce pseudo est déjà pris.' })
+        if (field === 'email')    return res.status(409).json({ error: 'Cette adresse e-mail est déjà utilisée.' })
+        return res.status(409).json({ error: 'Compte déjà existant.' })
+      }
       next(err)
     }
   }
@@ -154,6 +175,19 @@ router.patch('/me',
       }
       if (req.body.email  !== undefined) user.email  = req.body.email
       if (req.body.avatar !== undefined) user.avatar = req.body.avatar
+      if (req.body.socials !== undefined && typeof req.body.socials === 'object') {
+        const socials = user.socials?.toObject?.() ?? user.socials ?? {}
+        for (const key of SOCIAL_KEYS) {
+          if (req.body.socials[key] !== undefined) {
+            socials[key] = String(req.body.socials[key] ?? '').trim().slice(0, 50)
+          }
+        }
+        user.socials = socials
+      }
+      if (req.body.favoriteMedia !== undefined) {
+        const cleaned = sanitizeFavoriteMedia(req.body.favoriteMedia)
+        if (cleaned !== undefined) user.favoriteMedia = cleaned
+      }
       await user.save()
       res.json(await sanitizeUser(user))
     } catch (err) {
@@ -224,6 +258,16 @@ router.delete('/users/:id', requireAuth, requireAdmin, async (req, res, next) =>
     logAudit(req, 'user.delete', req.params.id, { username: user.username })
     res.json({ message: 'Utilisateur supprimé' })
   } catch (err) { next(err) }
+})
+
+// GET /api/auth/check-username — vérifie la disponibilité d'un pseudo (public)
+router.get('/check-username', async (req, res) => {
+  const username = (req.query.username || '').trim()
+  if (!username || username.length < 3 || username.length > 20 || !/^[a-zA-Z0-9_]+$/.test(username)) {
+    return res.status(400).json({ error: 'Pseudo invalide' })
+  }
+  const exists = await User.exists({ username: new RegExp(`^${username}$`, 'i') })
+  res.json({ available: !exists })
 })
 
 // ── OAuth ──────────────────────────────────────────────────────────────────

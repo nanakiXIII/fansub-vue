@@ -55,6 +55,42 @@
 
     <!-- Contenu principal -->
     <main class="flex-1 min-w-0 p-5 pb-20 lg:pb-5">
+
+      <!-- Bannière mise à jour GitHub -->
+      <Transition name="slide-banner">
+        <div
+          v-if="version.hasUpdate.value && !version.isDismissed.value"
+          class="mb-4 flex items-center gap-3 bg-sky-950/70 border border-sky-500/30 rounded-xl px-4 py-3 text-[12px]"
+        >
+          <svg class="w-4 h-4 shrink-0 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span class="text-sky-200 flex-1">
+            Mise à jour disponible —
+            <span class="font-mono text-sky-400">{{ version.localHash }}</span>
+            <span class="text-sky-500 mx-1">→</span>
+            <span class="font-mono text-white">{{ version.remoteHash.value }}</span>
+          </span>
+          <a
+            :href="`https://github.com/nanakiXIII/fansub-vue/compare/${version.localHash}...main`"
+            target="_blank"
+            rel="noopener"
+            class="shrink-0 text-[11px] font-semibold text-sky-300 hover:text-white transition-colors"
+          >
+            Voir les changements →
+          </a>
+          <button
+            @click="version.dismiss()"
+            class="shrink-0 ml-1 text-sky-600 hover:text-sky-200 transition-colors"
+            title="Ignorer"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </Transition>
+
       <RouterView />
     </main>
   </div>
@@ -65,11 +101,13 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useSettings } from '@/composables/useSettings.js'
+import { useSettings }   from '@/composables/useSettings.js'
+import { useGitVersion } from '@/composables/useGitVersion.js'
 import AdminDialog from '@/components/AdminDialog.vue'
 
 const route    = useRoute()
 const settings = useSettings()
+const version  = useGitVersion()
 
 const groups = [
   {
@@ -202,3 +240,10 @@ function isActive(to) {
   return route.path.startsWith(to)
 }
 </script>
+
+<style scoped>
+.slide-banner-enter-active { transition: opacity 0.2s ease, transform 0.2s ease, max-height 0.2s ease; }
+.slide-banner-leave-active { transition: opacity 0.15s ease, transform 0.15s ease, max-height 0.15s ease; }
+.slide-banner-enter-from, .slide-banner-leave-to { opacity: 0; transform: translateY(-6px); max-height: 0; }
+.slide-banner-enter-to, .slide-banner-leave-from { max-height: 80px; }
+</style>

@@ -1,13 +1,24 @@
 ﻿<template>
   <div>
     <!-- Hero bar -->
-    <div class="bg-bg-1 border-b border-white/[0.07] py-5 px-6">
-      <h1 class="text-2xl font-extrabold text-white mb-1">Catalogue complet</h1>
-      <p class="text-[13px] text-ink-2">Toutes nos séries sous-titrées, à portée de clic</p>
+    <div :class="layout === 'gundam'
+      ? 'cat-hero-g'
+      : 'bg-bg-1 border-b border-white/[0.07] py-5 px-6'">
+      <template v-if="layout === 'gundam'">
+        <div class="cat-hero-eyebrow">// MODULE · CATALOGUE COMPLET</div>
+        <h1 class="cat-hero-title">Catalogue</h1>
+        <p class="cat-hero-sub">{{ filteredSeries.length }} séries sous-titrées disponibles</p>
+      </template>
+      <template v-else>
+        <h1 class="text-2xl font-extrabold text-white mb-1">Catalogue complet</h1>
+        <p class="text-[13px] text-ink-2">Toutes nos séries sous-titrées, à portée de clic</p>
+      </template>
     </div>
 
     <!-- Sticky filters -->
-    <div class="sticky top-14 z-40 bg-bg-1 border-b border-white/[0.07]">
+    <div :class="layout === 'gundam'
+      ? 'sticky top-[59px] z-40 cat-filters-g'
+      : 'sticky top-14 z-40 bg-bg-1 border-b border-white/[0.07]'">
       <!-- Ligne 1 : recherche + statut + tri + vue -->
       <div class="flex items-center gap-2 px-4 py-2 border-b border-white/[0.04]">
         <!-- Search -->
@@ -111,12 +122,17 @@
       </div>
 
       <!-- LIST VIEW -->
-      <div v-else class="flex flex-col gap-2 pb-4">
+      <div v-else class="flex flex-col pb-4" :class="layout === 'gundam' ? 'gap-1.5' : 'gap-2'">
         <div
           v-for="s in filteredSeries"
           :key="s.id"
-          class="flex items-center gap-3 bg-bg-1 border border-white/[0.06] rounded-xl overflow-hidden cursor-pointer transition-all hover:border-white/20 hover:translate-x-0.5"
-          :class="s.visible === false ? 'opacity-50 grayscale' : ''"
+          class="flex items-center gap-3 overflow-hidden cursor-pointer transition-all"
+          :class="[
+            s.visible === false ? 'opacity-50 grayscale' : '',
+            layout === 'gundam'
+              ? 'bg-orange/[0.02] border border-orange/10 border-l-[3px] border-l-orange/25 hover:bg-orange/[0.05] hover:border-orange/25 hover:border-l-orange'
+              : 'bg-bg-1 border border-white/[0.06] rounded-xl hover:border-white/20 hover:translate-x-0.5'
+          ]"
           @click="router.push(`/serie/${s.id}`)"
         >
           <!-- Thumb -->
@@ -128,10 +144,10 @@
           <div class="flex-1 py-3 pr-4 flex flex-col sm:flex-row sm:items-center gap-3 min-w-0">
             <div class="flex-1 min-w-0">
               <div class="text-[13px] font-bold text-white mb-1 truncate">{{ s.titleFull }}</div>
-              <div class="text-[11px] text-ink-2 flex gap-2 flex-wrap items-center mb-2">
+              <div class="text-[11px] text-ink-2 flex gap-2 flex-wrap items-center mb-2" :class="layout === 'gundam' && 'font-mono'">
                 <span>{{ s.year }}</span>
                 <span class="text-ink-3">·</span>
-                <span>{{ s.episodes.length || s.seasons?.reduce((t, x) => t + (x.episodes?.length ?? 0), 0) }} épisodes</span>
+                <span>{{ s.episodes.length || s.seasons?.reduce((t, x) => t + (x.episodes?.length ?? 0), 0) }} EP</span>
                 <template v-if="s.duration">
                   <span class="text-ink-3">·</span>
                   <span>{{ s.duration }}/EP</span>
@@ -143,42 +159,36 @@
                 <span v-if="s.status === 'licensed'" class="badge badge-licensed">Licencié</span>
               </div>
               <div class="flex gap-1.5 flex-wrap">
-                <span v-for="g in s.genres" :key="g" class="text-[9px] bg-bg-3 text-ink-2 rounded px-1.5 py-[1px]">{{ g }}</span>
+                <span v-for="g in s.genres" :key="g" class="tag text-[9px] py-0.5 px-1.5">{{ g }}</span>
               </div>
             </div>
             <!-- Score + Actions -->
             <div class="flex items-center gap-3 sm:shrink-0">
               <!-- Score -->
               <div class="text-center shrink-0">
-                <div class="text-[20px] font-extrabold text-orange leading-none">{{ s.score }}</div>
-                <div class="text-[9px] font-semibold text-ink-3 uppercase tracking-wide mt-0.5">Note</div>
+                <div class="text-[20px] font-extrabold text-orange leading-none" :class="layout === 'gundam' && 'font-mono'">{{ s.score }}</div>
+                <div class="text-[9px] font-semibold text-ink-3 uppercase tracking-wide mt-0.5" :class="layout === 'gundam' && 'font-mono'">Note</div>
               </div>
               <!-- Actions -->
               <div class="flex flex-col gap-1.5 shrink-0">
                 <template v-if="getNextAction(s)">
-                  <!-- Streaming activé -->
                   <RouterLink
                     v-if="settings.streaming"
                     :to="getNextAction(s).url"
                     class="btn-primary text-[11px] py-1.5 px-3 gap-1.5"
                     @click.stop
                   >
-                    <svg v-if="getNextAction(s).type === 'rewatch'" class="w-3 h-3 shrink-0" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                      <path d="M3 12a9 9 0 1 0 2.6-6.36L3 3v6h6"/>
-                    </svg>
+                    <svg v-if="getNextAction(s).type === 'rewatch'" class="w-3 h-3 shrink-0" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 2.6-6.36L3 3v6h6"/></svg>
                     <svg v-else class="w-3 h-3 fill-white shrink-0" viewBox="0 0 16 16"><path d="M3 2l10 6-10 6V2z"/></svg>
                     {{ getNextAction(s).label }}
                   </RouterLink>
-                  <!-- Streaming désactivé → ancre vers l'épisode -->
                   <RouterLink
                     v-else
                     :to="`/serie/${s.id}#episode-${getNextAction(s).ep.num}`"
                     class="btn-primary text-[11px] py-1.5 px-3 gap-1.5"
                     @click.stop
                   >
-                    <svg class="w-3 h-3 shrink-0" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                      <path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><line x1="5" y1="21" x2="19" y2="21"/>
-                    </svg>
+                    <svg class="w-3 h-3 shrink-0" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><line x1="5" y1="21" x2="19" y2="21"/></svg>
                     Télécharger EP {{ getNextAction(s).ep.num }}
                   </RouterLink>
                 </template>
@@ -214,6 +224,7 @@ import { useFavorites } from '@/composables/useFavorites.js'
 import { useSettings } from '@/composables/useSettings.js'
 import { useSocket } from '@/composables/useSocket.js'
 import { useReleases } from '@/composables/useReleases.js'
+import { layout } from '@/composables/useTheme.js'
 
 const { isSerieNew } = useReleases()
 const { socket } = useSocket()

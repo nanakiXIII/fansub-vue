@@ -1,8 +1,12 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
-import fs   from 'node:fs'
-import path from 'node:path'
+import fs            from 'node:fs'
+import path          from 'node:path'
+import { execSync }  from 'node:child_process'
+
+let gitHash = 'dev'
+try { gitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim() } catch {}
 
 // Sert les fichiers vidéo locaux sous /haikyu/* en supportant les Range requests
 // (nécessaires pour la scrubbing / le seek dans le lecteur HTML5)
@@ -49,6 +53,9 @@ function localVideoPlugin(route, dir) {
 }
 
 export default defineConfig({
+  define: {
+    __GIT_HASH__: JSON.stringify(gitHash),
+  },
   server: {
     host: true,
     allowedHosts: true,

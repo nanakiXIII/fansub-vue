@@ -4,6 +4,44 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FansubZen</title>
+    <!-- Anti-FOUC : applique data-layout/data-theme avant le premier paint,
+         évite le flash blanc → sombre au rechargement en thème Gundam -->
+    <script>
+      (function () {
+        var bg = { braise: 'rgb(15,15,19)', ametiste: 'rgb(18,15,26)', abysses: 'rgb(10,18,26)', sakura: 'rgb(23,15,20)', air: 'rgb(19,21,28)' };
+        function gc(n) { var m = document.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)')); return m ? decodeURIComponent(m[1]) : ''; }
+        var layout = gc('layout'), theme = gc('theme'), el = document.documentElement;
+        if (layout) el.setAttribute('data-layout', layout);
+        if (theme)  el.setAttribute('data-theme',  theme);
+        el.style.backgroundColor = bg[theme] || bg.braise;
+      })();
+    </script>
+    <!-- SEO — meta de base -->
+    <meta name="description" content="Chuushin No Fansub — Sous-titres anime en français par la communauté" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://chuushin.fr" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <meta name="theme-color" content="#f47521" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Chuushin No Fansub" />
+    <meta property="og:title" content="Chuushin No Fansub" />
+    <meta property="og:description" content="Chuushin No Fansub — Sous-titres anime en français par la communauté" />
+    <meta property="og:image" content="https://chuushin.fr/og-default.jpg" />
+    <meta property="og:url" content="https://chuushin.fr" />
+    <meta property="og:locale" content="fr_FR" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Chuushin No Fansub" />
+    <meta name="twitter:description" content="Chuushin No Fansub — Sous-titres anime en français par la communauté" />
+    <meta name="twitter:image" content="https://chuushin.fr/og-default.jpg" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />

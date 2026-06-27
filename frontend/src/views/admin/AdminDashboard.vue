@@ -35,6 +35,30 @@
       </RouterLink>
     </div>
 
+    <!-- Stats membres -->
+    <div class="mb-8">
+      <div class="section-title mb-3">Activité des membres</div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <RouterLink
+          v-for="stat in memberStats"
+          :key="stat.label"
+          to="/admin/statistiques"
+          class="group bg-bg-1 border border-white/[0.06] rounded-xl p-4 hover:border-white/15 hover:-translate-y-0.5 transition-all"
+        >
+          <div class="flex items-start justify-between mb-3">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" :class="stat.color">
+              <span class="w-4 h-4" v-html="stat.icon"></span>
+            </div>
+          </div>
+          <div class="text-[24px] font-extrabold text-white leading-none mb-1">
+            {{ loading ? '—' : stat.value.toLocaleString('fr-FR') }}
+          </div>
+          <div class="text-[11px] font-medium text-ink-2">{{ stat.label }}</div>
+          <div v-if="stat.sub" class="text-[10px] text-ink-3 mt-0.5">{{ loading ? '' : stat.sub }}</div>
+        </RouterLink>
+      </div>
+    </div>
+
     <!-- Deux colonnes : raccourcis + activité récente -->
     <div class="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5">
 
@@ -129,31 +153,38 @@ const loading = ref(true)
 const counts  = ref({
   series: 0, users: 0, news: 0,
   team: 0, pending: 0, recruit: 0, bugsOpen: 0, inprogress: 0,
+  totalWatched: 0, totalWatchedCompleted: 0, totalMemberDownloads: 0, totalAchievements: 0,
 })
 
 onMounted(async () => {
-  try {
-    const [series, users, news, team, comments, recruit, bugs, inprogress] = await Promise.all([
-      http.get('/series'),
-      http.get('/auth/users'),
-      http.get('/news'),
-      http.get('/team'),
-      http.get('/comments?admin=1'),
-      http.get('/recruit'),
-      http.get('/bugs?status=open&limit=0').catch(() => ({ total: 0 })),
-      http.get('/inprogress'),
-    ])
-    counts.value = {
-      series:     series.length,
-      users:      users.length,
-      news:       news.length,
-      team:       team.length,
-      pending:    comments.filter(c => c.status === 'pending').length,
-      recruit:    recruit.filter(r => r.open).length,
-      bugsOpen:   bugs.total ?? 0,
-      inprogress: inprogress.length,
-    }
-  } catch {}
+  const [series, users, news, team, comments, recruit, bugs, inprogress, memberStats] = await Promise.allSettled([
+    http.get('/series'),
+    http.get('/auth/users'),
+    http.get('/news'),
+    http.get('/team'),
+    http.get('/comments?admin=1'),
+    http.get('/recruit'),
+    http.get('/bugs?status=open&limit=0'),
+    http.get('/inprogress'),
+    http.get('/stats'),
+  ])
+  const val = r => (r.status === 'fulfilled' ? r.value : null)
+  const arr = r => (Array.isArray(val(r)) ? val(r) : [])
+  const ms  = val(memberStats) ?? {}
+  counts.value = {
+    series:               arr(series).length,
+    users:                arr(users).length,
+    news:                 arr(news).length,
+    team:                 arr(team).length,
+    pending:              arr(comments).filter(c => c.status === 'pending').length,
+    recruit:              arr(recruit).filter(r => r.open).length,
+    bugsOpen:             val(bugs)?.total ?? 0,
+    inprogress:           arr(inprogress).length,
+    totalWatched:         ms.totalWatched         ?? 0,
+    totalWatchedCompleted:ms.totalWatchedCompleted ?? 0,
+    totalMemberDownloads: ms.totalMemberDownloads  ?? 0,
+    totalAchievements:    ms.totalAchievements     ?? 0,
+  }
   loading.value = false
 })
 
@@ -182,6 +213,12 @@ const stats = [
   { label: 'Bugs',         link: '/admin/beta',         get value() { return counts.value.bugsOpen }, get alert() { return counts.value.bugsOpen > 0 ? String(counts.value.bugsOpen) : null }, sub: 'rapports ouverts', color: 'bg-red-500/15 text-red-400', icon: ico.bug },
   { label: 'Recrutement',  link: '/admin/recrutement',  get value() { return counts.value.recruit  }, sub: 'postes ouverts',  color: 'bg-cyan-500/15 text-cyan-400',    icon: ico.recruit  },
   { label: 'Avancement',   link: '/admin/avancement',   get value() { return counts.value.inprogress }, sub: 'séries en cours', color: 'bg-indigo-500/15 text-indigo-400', icon: ico.clock   },
+]
+
+const memberStats = [
+  { label: 'Visionnages',   get value() { return counts.value.totalWatched          }, get sub() { return counts.value.totalWatchedCompleted + ' terminés' }, color: 'bg-sky-500/15 text-sky-400',    icon: '<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></svg>' },
+  { label: 'Téléchargements', get value() { return counts.value.totalMemberDownloads }, sub: 'par les membres',                                              color: 'bg-teal-500/15 text-teal-400',  icon: '<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' },
+  { label: 'Succès débloqués', get value() { return counts.value.totalAchievements  }, sub: 'toutes récompenses',                                           color: 'bg-amber-500/15 text-amber-400', icon: '<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>' },
 ]
 
 const quickLinks = [

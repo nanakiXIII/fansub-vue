@@ -7,9 +7,11 @@
 
 export const config = {
   // Identité du site
-  siteName    : import.meta.env.VITE_SITE_NAME     ?? 'FansubZen',
-  siteTagline : import.meta.env.VITE_SITE_TAGLINE  ?? '',
-  siteYear    : import.meta.env.VITE_SITE_YEAR     ?? new Date().getFullYear(),
+  siteName        : import.meta.env.VITE_SITE_NAME        ?? 'FansubZen',
+  siteTagline     : import.meta.env.VITE_SITE_TAGLINE     ?? '',
+  siteYear        : import.meta.env.VITE_SITE_YEAR        ?? new Date().getFullYear(),
+  siteUrl         : (import.meta.env.VITE_SITE_URL        ?? '').replace(/\/$/, ''),
+  siteDescription : import.meta.env.VITE_SITE_DESCRIPTION ?? '',
 
   // API
   apiBaseUrl  : import.meta.env.VITE_API_BASE_URL  ?? 'http://localhost:8000/api',

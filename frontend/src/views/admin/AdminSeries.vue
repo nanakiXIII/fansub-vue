@@ -310,6 +310,94 @@
                 <textarea v-model="form.synopsis" class="admin-input resize-none h-24" placeholder="Synopsis de la série…"></textarea>
               </label>
 
+              <!-- ── Dossier média ── -->
+              <div class="text-[10px] font-bold text-ink-3 uppercase tracking-widest mt-1">Dossier média</div>
+              <div class="flex flex-col gap-2">
+                <div class="flex gap-2">
+                  <!-- Chemin sélectionné -->
+                  <div class="flex-1 flex items-center gap-2 px-3 py-2 bg-bg-3 border border-white/[0.07] rounded-lg min-h-[34px] min-w-0">
+                    <svg class="w-3.5 h-3.5 text-orange shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    <span class="text-[12px] flex-1 font-mono truncate" :class="form.mediaPath ? 'text-ink-1' : 'text-ink-3'">
+                      {{ form.mediaPath || 'Aucun dossier sélectionné' }}
+                    </span>
+                    <button
+                      v-if="form.mediaPath"
+                      @click="form.mediaPath = ''"
+                      class="shrink-0 text-ink-3 hover:text-red-400 transition-colors"
+                      title="Effacer"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                  <button
+                    @click="toggleFolderBrowser"
+                    class="btn-outline text-[12px] py-2 px-3 shrink-0 gap-1.5 flex items-center"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    {{ folderBrowserOpen ? 'Fermer' : 'Parcourir' }}
+                  </button>
+                </div>
+
+                <!-- Explorateur de dossiers -->
+                <div v-if="folderBrowserOpen" class="border border-white/[0.08] rounded-xl overflow-hidden">
+                  <!-- Barre de navigation -->
+                  <div class="flex items-center gap-2 px-3 py-2 bg-bg-2 border-b border-white/[0.06]">
+                    <button
+                      v-if="folderBrowserPath"
+                      @click="browseFolder(parentPath(folderBrowserPath))"
+                      class="flex items-center gap-1 text-[11px] text-ink-3 hover:text-white transition-colors shrink-0"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                      Retour
+                    </button>
+                    <span class="text-[11px] text-ink-3 font-mono flex-1 truncate">
+                      {{ folderBrowserPath ? folderBrowserPath : '/ racine' }}
+                    </span>
+                    <button
+                      @click="selectFolder(folderBrowserPath)"
+                      :disabled="!folderBrowserPath"
+                      class="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-colors"
+                      :class="folderBrowserPath
+                        ? 'bg-orange/10 text-orange border-orange/30 hover:bg-orange/20'
+                        : 'bg-bg-3 text-ink-3 border-white/[0.06] cursor-not-allowed'"
+                    >
+                      ✓ Sélectionner ici
+                    </button>
+                  </div>
+
+                  <!-- Liste des dossiers -->
+                  <div class="bg-bg-3 max-h-52 overflow-y-auto divide-y divide-white/[0.04]">
+                    <div v-if="folderBrowserLoading" class="py-6 text-center text-[12px] text-ink-3">Chargement…</div>
+                    <div v-else-if="folderBrowserError" class="py-4 px-3 text-[12px] text-red-400">{{ folderBrowserError }}</div>
+                    <div v-else-if="!folderBrowserItems.length" class="py-6 text-center text-[12px] text-ink-3">Aucun sous-dossier</div>
+                    <div
+                      v-for="item in folderBrowserItems"
+                      :key="item.path"
+                      class="group flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/[0.05] transition-colors"
+                    >
+                      <svg class="w-3.5 h-3.5 text-orange/60 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2z"/></svg>
+                      <button
+                        @click="selectFolder(item.path)"
+                        class="flex-1 text-left text-[12px] text-ink-1 hover:text-white truncate transition-colors"
+                        :title="item.name"
+                      >
+                        {{ item.name }}
+                      </button>
+                      <button
+                        @click="browseFolder(item.path)"
+                        class="shrink-0 flex items-center gap-1 text-[10px] text-ink-3 hover:text-white transition-colors px-1.5 py-0.5 rounded hover:bg-white/[0.08] opacity-0 group-hover:opacity-100"
+                        title="Ouvrir le dossier"
+                      >
+                        Ouvrir
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <span class="text-[10px] text-ink-3">Dossier sur le serveur (relatif à MEDIA_ROOT) contenant les fichiers de cette série.</span>
+              </div>
+
               <label class="flex items-center gap-2.5 cursor-pointer mt-1">
                 <input type="checkbox" v-model="form.visible" class="w-4 h-4 accent-orange" />
                 <span class="text-[12px] text-ink-1">Visible dans le catalogue</span>
@@ -513,10 +601,22 @@
                 </div>
                 <span v-if="ep.sources" class="text-[9px] text-green-400 bg-green-400/10 border border-green-400/20 rounded px-1.5 py-0.5 shrink-0">Liens</span>
                 <span v-if="ep.visible === false" class="text-[9px] text-ink-3 bg-bg-3 border border-white/10 rounded px-1.5 py-0.5 shrink-0">Masqué</span>
+                <button @click="toggleEpVisible(ep)" class="w-6 h-6 flex items-center justify-center rounded transition-colors opacity-0 group-hover:opacity-100"
+                  :class="ep.visible === false ? 'text-ink-3 hover:text-green-400 hover:bg-green-400/10' : 'text-ink-3 hover:text-yellow-400 hover:bg-yellow-400/10'"
+                  :title="ep.visible === false ? 'Rendre visible' : 'Masquer'">
+                  <!-- Œil barré si masqué, œil ouvert si visible -->
+                  <svg v-if="ep.visible === false" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  <svg v-else class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
                 <button @click="startEditEp(ep, idx)" class="w-6 h-6 flex items-center justify-center rounded text-ink-3 hover:text-orange hover:bg-orange/10 transition-colors opacity-0 group-hover:opacity-100" title="Modifier">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
-                <button @click="deleteEp(idx)" class="w-6 h-6 flex items-center justify-center rounded text-ink-3 hover:text-red-400 hover:bg-red-400/10 transition-colors opacity-0 group-hover:opacity-100" title="Supprimer">
+                <template v-if="confirmDeleteIdx === idx">
+                  <span class="text-[10px] text-red-400 shrink-0">Supprimer ?</span>
+                  <button @click="deleteEp(idx)" class="text-[10px] font-bold text-red-400 hover:text-red-300 px-1.5 py-0.5 rounded bg-red-400/10 hover:bg-red-400/20 transition-colors shrink-0">Oui</button>
+                  <button @click="confirmDeleteIdx = null" class="text-[10px] text-ink-3 hover:text-ink-1 px-1.5 py-0.5 rounded hover:bg-white/5 transition-colors shrink-0">Non</button>
+                </template>
+                <button v-else @click="confirmDeleteIdx = idx" class="w-6 h-6 flex items-center justify-center rounded text-ink-3 hover:text-red-400 hover:bg-red-400/10 transition-colors opacity-0 group-hover:opacity-100" title="Supprimer">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                 </button>
               </div>
@@ -674,7 +774,7 @@ const emptyForm = () => ({
   status: 'ongoing', licensedBy: '', year: null, studio: '',
   score: null, episodesAired: null, duration: '', season: '',
   genresStr: '', tagsStr: '', synopsis: '',
-  visible: true, tmdbId: null,
+  visible: true, tmdbId: null, mediaPath: '',
 })
 
 const form = ref(emptyForm())
@@ -684,6 +784,46 @@ const filtered = computed(() => {
   if (activeFilter.value === 'all')     return series.value
   return series.value.filter(s => s.status === activeFilter.value)
 })
+
+// ── Explorateur de dossiers ───────────────────────────────────────────────
+const folderBrowserOpen    = ref(false)
+const folderBrowserPath    = ref('')
+const folderBrowserItems   = ref([])
+const folderBrowserLoading = ref(false)
+const folderBrowserError   = ref('')
+
+function parentPath(p) {
+  const parts = p.split('/').filter(Boolean)
+  parts.pop()
+  return parts.join('/')
+}
+
+async function browseFolder(path = '') {
+  folderBrowserLoading.value = true
+  folderBrowserError.value   = ''
+  folderBrowserItems.value   = []
+  try {
+    const data = await http.get(`/files?path=${encodeURIComponent(path)}`)
+    folderBrowserPath.value  = data.path ?? path
+    folderBrowserItems.value = (data.entries ?? []).filter(e => e.isDir)
+  } catch (e) {
+    folderBrowserError.value = e?.message || 'Impossible de lire le dossier'
+  } finally {
+    folderBrowserLoading.value = false
+  }
+}
+
+async function toggleFolderBrowser() {
+  folderBrowserOpen.value = !folderBrowserOpen.value
+  if (folderBrowserOpen.value) {
+    await browseFolder(form.value.mediaPath || '')
+  }
+}
+
+function selectFolder(path) {
+  form.value.mediaPath    = path
+  folderBrowserOpen.value = false
+}
 
 function statusLabel(s) {
   return { ongoing: 'En cours', completed: 'Terminée', upcoming: 'À venir', licensed: 'Licencié', dropped: 'Abandonné' }[s] ?? s
@@ -718,11 +858,15 @@ onMounted(async () => {
 })
 
 function resetModal() {
-  formError.value      = ''
-  tmdbQuery.value      = ''
-  tmdbResults.value    = []
-  tmdbError.value      = ''
-  tmdbApplied.value    = false
+  formError.value        = ''
+  tmdbQuery.value        = ''
+  tmdbResults.value      = []
+  tmdbError.value        = ''
+  tmdbApplied.value      = false
+  folderBrowserOpen.value  = false
+  folderBrowserPath.value  = ''
+  folderBrowserItems.value = []
+  folderBrowserError.value = ''
 }
 
 function openCreate() {
@@ -757,6 +901,7 @@ function openEdit(s) {
     synopsis:      s.synopsis      ?? '',
     visible:       s.visible !== false,
     tmdbId:        s.tmdbId        ?? null,
+    mediaPath:     s.mediaPath     ?? '',
   }
   resetModal()
   parseGradient()
@@ -818,6 +963,7 @@ async function applyTMDB(r) {
       synopsis:      d.overview || '',
       visible:       false,
       tmdbId:        d.id ?? null,
+      mediaPath:     '',
     }
     tmdbApplied.value  = true
     tmdbResults.value  = []
@@ -932,7 +1078,7 @@ const fpVisibleEntries = computed(() =>
 function openFilePicker(quality) {
   fpQuality.value = quality
   fpOpen.value    = true
-  fpNavigate(fpPath.value || '')
+  fpNavigate(fpPath.value || epSerie.value?.mediaPath || '')
 }
 
 function fpSelect(entry) {
@@ -943,8 +1089,9 @@ function fpSelect(entry) {
 
 // ── Gestion épisodes ──────────────────────────────────────────────────
 
-const showEpModal   = ref(false)
-const epSerie       = ref(null)
+const showEpModal      = ref(false)
+const epSerie          = ref(null)
+const confirmDeleteIdx = ref(null)
 const epView        = ref('seasons') // 'seasons' | 'episodes'
 const epSeasonIdx   = ref(-1)        // -1 = liste plate, sinon index saison
 const epSaving      = ref(false)
@@ -980,21 +1127,24 @@ function openEpModal(s) {
   epError.value       = ''
   showSeasonForm.value = false
   showEpForm.value    = false
+  fpPath.value        = epSerie.value.mediaPath || ''
   showEpModal.value   = true
 }
 
 function openSeasonEpisodes(idx) {
-  epSeasonIdx.value = idx
-  epView.value      = 'episodes'
-  showEpForm.value  = false
-  editingEpIdx.value = -1
+  epSeasonIdx.value    = idx
+  epView.value         = 'episodes'
+  showEpForm.value     = false
+  editingEpIdx.value   = -1
+  confirmDeleteIdx.value = null
 }
 
 function openFlatEpisodes() {
-  epSeasonIdx.value  = -1
-  epView.value       = 'episodes'
-  showEpForm.value   = false
-  editingEpIdx.value = -1
+  epSeasonIdx.value    = -1
+  epView.value         = 'episodes'
+  showEpForm.value     = false
+  editingEpIdx.value   = -1
+  confirmDeleteIdx.value = null
 }
 
 function backToSeasons() {
@@ -1125,7 +1275,7 @@ async function importFromTMDB() {
         if (ep.air_date) existing.airDate   = ep.air_date
         if (thumb)       existing.thumbnail = thumb
       } else {
-        list.push({ num: ep.episode_number, title: ep.name || '', airDate: ep.air_date || '', thumbnail: thumb, visible: true, subUrl: '', sources: null })
+        list.push({ num: ep.episode_number, title: ep.name || '', airDate: ep.air_date || '', thumbnail: thumb, visible: false, subUrl: '', sources: null })
       }
     }
     list.sort((a, b) => a.num - b.num)
@@ -1142,6 +1292,12 @@ function deleteEp(idx) {
     ? epSerie.value.episodes
     : epSerie.value.seasons[epSeasonIdx.value].episodes
   list.splice(idx, 1)
+  confirmDeleteIdx.value = null
+  saveEpisodes()
+}
+
+function toggleEpVisible(ep) {
+  ep.visible = ep.visible === false ? true : false
   saveEpisodes()
 }
 

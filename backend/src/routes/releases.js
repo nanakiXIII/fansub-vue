@@ -1,8 +1,10 @@
 const express  = require('express')
 const Release  = require('../models/Release')
+const Series   = require('../models/Series')
 const { requireAuth, requireAdmin } = require('../middleware/auth')
 const { emit } = require('../socket')
 const { notifyFollowers } = require('../services/notificationService')
+const { findEpisode } = require('../utils/episodeLookup')
 
 const router = express.Router()
 
@@ -10,8 +12,26 @@ const router = express.Router()
 router.get('/', async (req, res, next) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 10, 100)
-    const items = await Release.find().sort({ releasedAt: -1 }).limit(limit)
-    res.json(items)
+
+    // On récupère plus que nécessaire pour compenser le filtrage des épisodes masqués
+    const candidates = await Release.find().sort({ releasedAt: -1 }).limit(limit * 4)
+
+    const serieIds  = [...new Set(candidates.map(r => r.serieId))]
+    const seriesDocs = await Series.find(
+      { id: { $in: serieIds }, visible: { $ne: false } },
+      'id seasons episodes'
+    ).lean()
+    const seriesMap = Object.fromEntries(seriesDocs.map(s => [s.id, s]))
+
+    const visible = candidates.filter(r => {
+      const serie = seriesMap[r.serieId]
+      if (!serie) return false
+
+      const episode = findEpisode(serie, r.seasonSlug, r.epNum)
+      return episode?.visible !== false
+    }).slice(0, limit)
+
+    res.json(visible)
   } catch (err) { next(err) }
 })
 

@@ -4,7 +4,7 @@
     <button
       @click="toggle"
       class="chat-fab"
-      :class="{ 'chat-fab--open': open }"
+      :class="{ 'chat-fab--open': open, 'chat-fab--gundam': isGundam }"
       aria-label="Chat"
     >
       <svg v-if="!open" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -18,32 +18,40 @@
 
     <!-- Panel -->
     <Transition name="chat-panel">
-      <div v-if="open" class="chat-panel">
+      <div v-if="open" class="chat-panel" :class="{ 'chat-panel--gundam': isGundam }">
+
         <!-- Header -->
-        <div class="chat-header">
-          <div class="flex items-center gap-2">
-            <span class="text-[13px] font-bold text-white">Chat</span>
-            <span class="flex items-center gap-1 text-[10px] text-emerald-400 font-medium">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+        <div class="chat-header" :class="{ 'chat-header--gundam': isGundam }">
+          <div class="flex items-center gap-2 flex-1 min-w-0">
+            <span :class="isGundam ? 'text-[10px] font-mono font-bold tracking-widest uppercase text-orange' : 'text-[13px] font-bold text-white'">
+              {{ isGundam ? 'Canal de communication' : 'Chat' }}
+            </span>
+            <span class="flex items-center gap-1 font-medium" :class="isGundam ? 'text-[9px] font-mono text-emerald-400' : 'text-[10px] text-emerald-400'">
+              <span :class="isGundam ? 'w-1.5 h-1.5 bg-emerald-400 inline-block animate-pulse' : 'w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse'"></span>
               {{ onlineCount }} en ligne
             </span>
           </div>
         </div>
 
         <!-- Messages -->
-        <div ref="messagesEl" class="chat-messages">
+        <div ref="messagesEl" class="chat-messages" :class="{ 'chat-messages--gundam': isGundam }">
           <div v-if="messages.length === 0" class="flex-1 flex items-center justify-center text-[12px] text-ink-3 py-8">
-            Aucun message.
+            <span v-if="isGundam" class="font-mono text-[10px] tracking-widest uppercase opacity-50">// Aucune transmission</span>
+            <span v-else>Aucun message.</span>
           </div>
           <div
             v-for="msg in messages"
             :key="msg._id || msg.tempId"
             class="chat-msg"
+            :class="{ 'chat-msg--gundam': isGundam }"
           >
-            <!-- Avatar : image URL ou dégradé avec initiales -->
+            <!-- Avatar -->
             <div
-              class="w-7 h-7 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-[10px] font-bold text-white"
-              :style="isImageAvatar(msg.avatar) ? {} : { background: msg.avatar || 'linear-gradient(135deg,#6366f1,#8b5cf6)' }"
+              :class="[
+                'shrink-0 overflow-hidden flex items-center justify-center text-[10px] font-bold text-white',
+                isGundam ? 'w-7 h-7' : 'w-7 h-7 rounded-full'
+              ]"
+              :style="isImageAvatar(msg.avatar) ? {} : { background: msg.avatar || (isGundam ? 'linear-gradient(135deg,#f47521,#fb923c)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)') }"
             >
               <img loading="lazy" v-if="isImageAvatar(msg.avatar)" :src="msg.avatar" class="w-full h-full object-cover" :alt="msg.username" />
               <span v-else>{{ (msg.username || '?').slice(0, 2).toUpperCase() }}</span>
@@ -53,10 +61,11 @@
                 <span class="text-[11px] font-bold text-white truncate">{{ msg.username }}</span>
                 <span
                   v-if="msg.roleLabel"
-                  class="text-[9px] font-bold px-1 py-px rounded"
+                  class="text-[9px] font-bold px-1 py-px"
+                  :class="isGundam ? '' : 'rounded'"
                   :style="{ background: (msg.roleColor || '#555') + '30', color: msg.roleColor || '#aaa' }"
                 >{{ msg.roleLabel }}</span>
-                <span class="text-[9px] text-ink-3 ml-auto shrink-0">{{ formatTime(msg.createdAt) }}</span>
+                <span class="text-[9px] text-ink-3 ml-auto shrink-0" :class="{ 'font-mono': isGundam }">{{ formatTime(msg.createdAt) }}</span>
               </div>
               <p class="text-[11px] text-ink-1 break-words leading-relaxed">{{ msg.text }}</p>
             </div>
@@ -64,12 +73,13 @@
         </div>
 
         <!-- Error -->
-        <div v-if="errorMsg" class="px-3 py-1.5 text-[10px] text-red-400 bg-red-500/10 border-t border-red-500/20">
+        <div v-if="errorMsg" class="px-3 py-1.5 text-[10px] text-red-400 bg-red-500/10 border-t border-red-500/20"
+          :class="{ 'font-mono tracking-wide border-red-500/30': isGundam }">
           {{ errorMsg }}
         </div>
 
         <!-- Input -->
-        <div class="chat-input-area">
+        <div class="chat-input-area" :class="{ 'chat-input-area--gundam': isGundam }">
           <template v-if="isLoggedIn">
             <input
               v-model="draft"
@@ -78,16 +88,18 @@
               maxlength="500"
               placeholder="Votre message…"
               class="chat-input"
+              :class="{ 'chat-input--gundam': isGundam }"
             />
-            <button @click="sendMessage" :disabled="!draft.trim() || sending" class="chat-send-btn">
+            <button @click="sendMessage" :disabled="!draft.trim() || sending"
+              class="chat-send-btn" :class="{ 'chat-send-btn--gundam': isGundam }">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
               </svg>
             </button>
           </template>
-          <div v-else class="text-center w-full text-[11px] text-ink-3 py-2">
-            <RouterLink to="/login" class="text-accent-1 hover:underline" @click="open = false">Connectez-vous</RouterLink>
-            pour participer au chat.
+          <div v-else class="text-center w-full text-[11px] text-ink-3 py-2" :class="{ 'font-mono text-[10px] tracking-wider uppercase': isGundam }">
+            <RouterLink to="/login" class="text-orange hover:underline" @click="open = false">Connectez-vous</RouterLink>
+            pour participer.
           </div>
         </div>
       </div>
@@ -99,10 +111,12 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useChat } from '@/composables/useChat.js'
 import { useSettings } from '@/composables/useSettings.js'
+import { layout } from '@/composables/useTheme.js'
 
 const { messages, unread, onlineCount, loadHistory, resetUnread, sendMessage: chatSend, socket } = useChat()
 const settings   = useSettings()
 const isLoggedIn = computed(() => !!settings.uid)
+const isGundam   = computed(() => layout.value === 'gundam')
 
 const open       = ref(false)
 const draft      = ref('')
@@ -308,5 +322,89 @@ watch(open, (val) => { if (val) resetUnread() })
 
 @media (max-width: 400px) {
   .chat-panel { width: calc(100vw - 2rem); right: 1rem; }
+}
+
+/* ── GUNDAM THEME ────────────────────────────────────────────────── */
+.chat-fab--gundam {
+  background: rgb(var(--color-orange));
+  border-radius: 0;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  box-shadow: 0 0 16px rgba(var(--color-orange), 0.4);
+  transition: box-shadow 0.2s, filter 0.2s;
+}
+.chat-fab--gundam:hover {
+  transform: none;
+  filter: brightness(1.12);
+  box-shadow: 0 0 28px rgba(var(--color-orange), 0.6);
+}
+.chat-fab--gundam.chat-fab--open {
+  background: rgba(var(--color-orange), 0.15);
+  border: 1px solid rgba(var(--color-orange), 0.4);
+  box-shadow: 0 0 12px rgba(var(--color-orange), 0.2);
+}
+
+.chat-panel--gundam {
+  background: rgb(var(--color-bg-1));
+  border: 1px solid rgba(var(--color-orange), 0.18);
+  border-top: 2px solid rgba(var(--color-orange), 0.5);
+  border-radius: 0;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.8), 0 0 24px rgba(var(--color-orange), 0.06);
+}
+
+.chat-header--gundam {
+  background: rgba(var(--color-orange), 0.05);
+  border-bottom: 1px solid rgba(var(--color-orange), 0.12);
+}
+.chat-header--gundam::before {
+  content: '// ';
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: rgb(var(--color-orange));
+  opacity: 0.45;
+  letter-spacing: 0.1em;
+}
+
+.chat-messages--gundam {
+  scrollbar-color: rgba(var(--color-orange), 0.35) transparent;
+}
+.chat-messages--gundam::-webkit-scrollbar-thumb {
+  border-radius: 0;
+  background: rgba(var(--color-orange), 0.35);
+}
+
+.chat-msg--gundam {
+  border-left: 2px solid transparent;
+  padding-left: 6px;
+  transition: border-color 0.15s;
+}
+.chat-msg--gundam:hover {
+  border-left-color: rgba(var(--color-orange), 0.4);
+}
+
+.chat-input-area--gundam {
+  background: rgba(var(--color-orange), 0.02);
+  border-top: 1px solid rgba(var(--color-orange), 0.12);
+}
+
+.chat-input--gundam {
+  background: rgba(var(--color-orange), 0.03);
+  border: 1px solid rgba(var(--color-orange), 0.15);
+  border-radius: 0;
+}
+.chat-input--gundam:focus {
+  border-color: rgba(var(--color-orange), 0.5);
+  box-shadow: 0 0 0 1px rgba(var(--color-orange), 0.12);
+}
+
+.chat-send-btn--gundam {
+  background: rgb(var(--color-orange));
+  border-radius: 0;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  box-shadow: 0 0 10px rgba(var(--color-orange), 0.35);
+}
+.chat-send-btn--gundam:not(:disabled):hover {
+  opacity: 1;
+  filter: brightness(1.12);
+  box-shadow: 0 0 18px rgba(var(--color-orange), 0.55);
 }
 </style>

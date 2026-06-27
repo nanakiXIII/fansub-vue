@@ -372,6 +372,128 @@
       </div>
     </template>
 
+    <!-- ── Onglet Membres ── -->
+    <template v-else-if="activeTab === 'membres'">
+
+      <!-- Top 10 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <!-- Top 10 visionnages -->
+        <div class="bg-bg-1 border border-white/[0.07] rounded-2xl p-4">
+          <div class="text-[11px] font-bold text-ink-2 mb-3 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-sky-400" fill="currentColor" viewBox="0 0 16 16"><path d="M3 2l10 6-10 6V2z"/></svg>
+            Top 10 — plus de visionnages
+          </div>
+          <div class="flex flex-col gap-2.5">
+            <template v-if="loading">
+              <div v-for="n in 5" :key="n" class="h-7 bg-white/[0.05] rounded animate-pulse"></div>
+            </template>
+            <template v-else-if="!membresData.top10Watchers?.length">
+              <div class="text-[11px] text-ink-3 py-2">Aucune donnée</div>
+            </template>
+            <template v-else>
+              <div v-for="(row, i) in membresData.top10Watchers" :key="String(row._id)" class="flex items-center gap-2.5">
+                <span class="text-[10px] font-bold text-ink-3 w-4 shrink-0 text-right">{{ i + 1 }}</span>
+                <div class="w-6 h-6 rounded-full shrink-0 overflow-hidden bg-bg-2 flex items-center justify-center text-[9px] font-bold text-ink-2"
+                     :style="row.avatar && isImg(row.avatar) ? {} : { background: row.avatar || 'linear-gradient(135deg,#6366f1,#8b5cf6)' }">
+                  <img v-if="row.avatar && isImg(row.avatar)" :src="row.avatar" class="w-full h-full object-cover" />
+                  <span v-else>{{ row.username?.[0]?.toUpperCase() }}</span>
+                </div>
+                <span class="flex-1 text-[11px] font-semibold text-ink-1 truncate">{{ row.username }}</span>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span class="text-[11px] font-bold text-sky-400">{{ row.watched.toLocaleString('fr-FR') }}</span>
+                  <span class="text-[9px] text-ink-3">({{ row.completed }} terminés)</span>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Top 10 téléchargements -->
+        <div class="bg-bg-1 border border-white/[0.07] rounded-2xl p-4">
+          <div class="text-[11px] font-bold text-ink-2 mb-3 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-teal-400" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Top 10 — plus de téléchargements
+          </div>
+          <div class="flex flex-col gap-2.5">
+            <template v-if="loading">
+              <div v-for="n in 5" :key="n" class="h-7 bg-white/[0.05] rounded animate-pulse"></div>
+            </template>
+            <template v-else-if="!membresData.top10Downloaders?.length">
+              <div class="text-[11px] text-ink-3 py-2">Aucune donnée</div>
+            </template>
+            <template v-else>
+              <div v-for="(row, i) in membresData.top10Downloaders" :key="String(row._id)" class="flex items-center gap-2.5">
+                <span class="text-[10px] font-bold text-ink-3 w-4 shrink-0 text-right">{{ i + 1 }}</span>
+                <div class="w-6 h-6 rounded-full shrink-0 overflow-hidden bg-bg-2 flex items-center justify-center text-[9px] font-bold text-ink-2"
+                     :style="row.avatar && isImg(row.avatar) ? {} : { background: row.avatar || 'linear-gradient(135deg,#6366f1,#8b5cf6)' }">
+                  <img v-if="row.avatar && isImg(row.avatar)" :src="row.avatar" class="w-full h-full object-cover" />
+                  <span v-else>{{ row.username?.[0]?.toUpperCase() }}</span>
+                </div>
+                <span class="flex-1 text-[11px] font-semibold text-ink-1 truncate">{{ row.username }}</span>
+                <span class="text-[11px] font-bold text-teal-400 shrink-0">{{ row.downloads.toLocaleString('fr-FR') }} DL</span>
+              </div>
+            </template>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tableau tous les membres -->
+      <section class="bg-bg-1 border border-white/[0.07] rounded-2xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-white/[0.07] flex items-center gap-2">
+          <svg class="w-4 h-4 text-purple-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="text-[13px] font-bold text-white">Tous les membres</span>
+          <span class="ml-auto text-[11px] text-ink-3">{{ membresData.rows.length }} membre(s)</span>
+        </div>
+        <div v-if="loading" class="p-5 text-[12px] text-ink-3 text-center">Chargement…</div>
+        <div v-else-if="!membresData.rows.length" class="p-5 text-[12px] text-ink-3 text-center">Aucun membre</div>
+        <table v-else class="w-full text-[12px]">
+          <thead>
+            <tr class="border-b border-white/[0.07] text-[10px] text-ink-3 uppercase tracking-widest">
+              <th class="pl-5 py-2.5 text-left font-bold">Membre</th>
+              <th class="py-2.5 px-3 text-right font-bold w-28 cursor-pointer hover:text-white" @click="membresSort = 'watched'">
+                <span :class="membresSort === 'watched' ? 'text-sky-400' : ''">Visionnages</span>
+              </th>
+              <th class="py-2.5 px-3 text-right font-bold w-24">Terminés</th>
+              <th class="py-2.5 px-3 text-right font-bold w-28 cursor-pointer hover:text-white" @click="membresSort = 'downloads'">
+                <span :class="membresSort === 'downloads' ? 'text-teal-400' : ''">Télécharg.</span>
+              </th>
+              <th class="py-2.5 px-3 text-right font-bold w-24 cursor-pointer hover:text-white" @click="membresSort = 'achievements'">
+                <span :class="membresSort === 'achievements' ? 'text-amber-400' : ''">Succès</span>
+              </th>
+              <th class="pr-5 py-2.5 text-right font-bold w-28">Inscrit</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in sortedMembresRows" :key="String(row._id)" class="border-b border-white/[0.05] last:border-0 hover:bg-white/[0.02] transition-colors">
+              <td class="pl-5 py-2.5">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-[10px] font-bold text-white"
+                       :style="row.avatar && isImg(row.avatar) ? {} : { background: row.avatar || 'linear-gradient(135deg,#6366f1,#8b5cf6)' }">
+                    <img v-if="row.avatar && isImg(row.avatar)" :src="row.avatar" class="w-full h-full object-cover" />
+                    <span v-else>{{ row.username?.[0]?.toUpperCase() }}</span>
+                  </div>
+                  <div>
+                    <div class="font-semibold text-ink-1 flex items-center gap-1.5">
+                      {{ row.username }}
+                      <span v-if="row.isAdmin" class="text-[8px] font-bold px-1.5 py-px rounded bg-orange/20 text-orange">ADMIN</span>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td class="py-2.5 px-3 text-right font-bold" :class="membresSort === 'watched' ? 'text-sky-400' : 'text-ink-1'">{{ row.watched.toLocaleString('fr-FR') }}</td>
+              <td class="py-2.5 px-3 text-right text-emerald-400 font-semibold">{{ row.completed.toLocaleString('fr-FR') }}</td>
+              <td class="py-2.5 px-3 text-right font-bold" :class="membresSort === 'downloads' ? 'text-teal-400' : 'text-ink-1'">{{ row.downloads.toLocaleString('fr-FR') }}</td>
+              <td class="py-2.5 px-3 text-right font-bold" :class="membresSort === 'achievements' ? 'text-amber-400' : 'text-ink-1'">{{ row.achievements.toLocaleString('fr-FR') }}</td>
+              <td class="pr-5 py-2.5 text-right text-ink-3 whitespace-nowrap">{{ fmtDate(row.createdAt) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+    </template>
+
   </div>
 </template>
 
@@ -396,6 +518,11 @@ const tabs = [
     label: 'Commentaires',
     icon: '<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
   },
+  {
+    id: 'membres',
+    label: 'Membres',
+    icon: '<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  },
 ]
 const activeTab = ref('series')
 
@@ -404,19 +531,20 @@ const loading      = ref(true)
 const seriesData   = ref({ totalViews: 0, totalDownloads: 0, totalSeries: 0, rows: [] })
 const newsData     = ref({ totalViews: 0, totalComments: 0, totalArticles: 0, rows: [] })
 const commentsData = ref({ total: 0, pending: 0, approved: 0, rejected: 0, perSerie: [], perArticle: [] })
+const membresData  = ref({ rows: [], top10Watchers: [], top10Downloaders: [] })
 
 async function reload() {
   loading.value = true
-  try {
-    const [s, n, c] = await Promise.all([
-      http.get('/stats/series'),
-      http.get('/stats/news'),
-      http.get('/stats/comments'),
-    ])
-    seriesData.value   = s
-    newsData.value     = n
-    commentsData.value = c
-  } catch {}
+  const [s, n, c, m] = await Promise.allSettled([
+    http.get('/stats/series'),
+    http.get('/stats/news'),
+    http.get('/stats/comments'),
+    http.get('/stats/membres'),
+  ])
+  if (s.status === 'fulfilled') seriesData.value   = s.value
+  if (n.status === 'fulfilled') newsData.value     = n.value
+  if (c.status === 'fulfilled') commentsData.value = c.value
+  if (m.status === 'fulfilled') membresData.value  = m.value
   loading.value = false
 }
 onMounted(reload)
@@ -470,6 +598,17 @@ const top10Views     = computed(() => [...seriesData.value.rows].sort((a, b) => 
 const top10Downloads = computed(() => [...seriesData.value.rows].sort((a, b) => b.downloads - a.downloads).slice(0, 10))
 const top10NewsViews    = computed(() => [...newsData.value.rows].sort((a, b) => b.views    - a.views).slice(0, 10))
 const top10NewsComments = computed(() => [...newsData.value.rows].sort((a, b) => b.comments - a.comments).slice(0, 10))
+
+// ── Tri membres ──────────────────────────────────────────────────
+const membresSort = ref('watched')
+const sortedMembresRows = computed(() => {
+  const rows = [...membresData.value.rows]
+  if (membresSort.value === 'downloads')    return rows.sort((a, b) => b.downloads    - a.downloads)
+  if (membresSort.value === 'achievements') return rows.sort((a, b) => b.achievements - a.achievements)
+  return rows.sort((a, b) => b.watched - a.watched)
+})
+
+function isImg(val) { return val && (val.startsWith('http') || val.startsWith('/')) }
 
 function pct(count, arr, key) {
   const max = arr[0]?.[key] ?? 1

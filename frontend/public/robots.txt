@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /admin
+Disallow: /api/
+Disallow: /connexion
+Disallow: /inscription
+Disallow: /profil
+
+Allow: /
+
+Sitemap: https://chuushin.fr/sitemap.xml

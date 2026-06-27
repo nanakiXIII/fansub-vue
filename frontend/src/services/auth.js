@@ -7,7 +7,8 @@ export const authService = {
   register:      (username, email, password) => http.post('/auth/register', { username, email, password }),
   me:            ()                          => http.get('/auth/me'),
   updateProfile: (data)                      => http.patch('/auth/me', data),
-  deleteAccount: ()                          => http.delete('/auth/me'),
+  deleteAccount:  ()                          => http.delete('/auth/me'),
+  checkUsername:  (username)                 => http.get(`/auth/check-username?username=${encodeURIComponent(username)}`),
 
   uploadAvatar: async (file) => {
     const form = new FormData()

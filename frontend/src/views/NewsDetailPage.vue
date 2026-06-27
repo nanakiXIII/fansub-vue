@@ -46,6 +46,11 @@
         </template>
       </div>
 
+      <!-- Partage -->
+      <div class="flex justify-end mb-7">
+        <ShareButtons :title="article.title" />
+      </div>
+
       <!-- Série mentionnée -->
       <RouterLink
         v-if="linkedSerie"
@@ -108,15 +113,17 @@
 </template>
 
 <script setup>
-import { ref, computed, watchEffect, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getCategoryBadge } from '@/data/news.js'
 import { http } from '@/services/http.js'
 import { overlayAlpha } from '@/composables/useImageOverlay.js'
 import { useProgress } from '@/composables/useProgress.js'
 import { config } from '@/config.js'
+import { useSeo } from '@/composables/useSeo.js'
 import EpisodeList from '@/components/EpisodeList.vue'
 import CommentSection from '@/components/CommentSection.vue'
+import ShareButtons from '@/components/ShareButtons.vue'
 
 const route   = useRoute()
 const { store: progressStore } = useProgress()
@@ -136,10 +143,29 @@ onMounted(async () => {
 
 const articleId = computed(() => route.params.id)
 
-watchEffect(() => {
-  document.title = article.value
-    ? `${article.value.title} — ${config.siteName}`
-    : config.siteName
+useSeo(() => {
+  if (!article.value) return null
+  const a = article.value
+  const desc = a.excerpt || (Array.isArray(a.content) ? a.content[0]?.slice(0, 160) : a.contentHtml?.replace(/<[^>]+>/g, '').slice(0, 160)) || ''
+  return {
+    title      : a.title,
+    description: desc,
+    image      : a.thumb || linkedSerie.value?.banner || linkedSerie.value?.poster,
+    url        : `${config.siteUrl}/actualite/${route.params.id}`,
+    type       : 'article',
+    ldJson     : {
+      '@context'       : 'https://schema.org',
+      '@type'          : 'NewsArticle',
+      headline         : a.title,
+      description      : desc,
+      image            : a.thumb || linkedSerie.value?.banner,
+      datePublished    : a.createdAt,
+      dateModified     : a.updatedAt || a.createdAt,
+      author           : { '@type': 'Organization', name: config.siteName },
+      publisher        : { '@type': 'Organization', name: config.siteName, url: config.siteUrl },
+      url              : `${config.siteUrl}/actualite/${route.params.id}`,
+    },
+  }
 })
 
 const linkedSeasonSlug = computed(() => {

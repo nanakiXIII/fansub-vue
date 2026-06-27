@@ -2,7 +2,56 @@
   <Teleport to="body">
     <div class="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 items-end pointer-events-none">
       <TransitionGroup name="achievement-toast" tag="div" class="flex flex-col gap-3 items-end">
+
+        <!-- ══ GUNDAM ══ -->
         <div
+          v-if="layout === 'gundam'"
+          v-for="toast in toasts"
+          :key="toast.id"
+          class="pointer-events-auto relative overflow-hidden w-72 bg-bg-1 border border-l-[3px]"
+          :style="{ borderColor: toast.color + '30', borderLeftColor: toast.color }"
+        >
+          <!-- Coin HUD -->
+          <span class="absolute top-0 right-0 w-2.5 h-2.5 pointer-events-none" :style="{ borderTop: `1px solid ${toast.color}80`, borderRight: `1px solid ${toast.color}80` }"></span>
+
+          <!-- Étiquette module -->
+          <div class="px-3 py-1.5 border-b flex items-center gap-2" :style="{ borderColor: toast.color + '20' }">
+            <svg class="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 24 24" :style="{ color: toast.color }">
+              <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
+            </svg>
+            <span class="text-[8px] font-mono tracking-[0.2em] uppercase flex-1" :style="{ color: toast.color }">// SUCCÈS DÉBLOQUÉ</span>
+            <button @click="dismiss(toast.id)" class="text-ink-3 hover:text-white transition-colors">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <!-- Corps -->
+          <div class="flex items-center gap-3 p-3">
+            <!-- Icône carré -->
+            <div class="relative shrink-0 w-11 h-11 flex items-center justify-center text-[24px] border"
+              :style="{ background: toast.color + '18', borderColor: toast.color + '40' }">
+              {{ toast.icon }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-[12px] font-mono font-bold text-white leading-tight">{{ toast.name }}</div>
+              <div class="text-[10px] text-ink-3 mt-0.5 leading-snug">{{ toast.description }}</div>
+              <span v-if="toast.rewardTitle"
+                class="inline-flex items-center mt-1 text-[9px] font-mono font-bold px-1.5 py-0.5 border tracking-wider"
+                :style="{ background: toast.color + '18', color: toast.color, borderColor: toast.color + '40' }">
+                « {{ toast.rewardTitle }} »
+              </span>
+            </div>
+          </div>
+
+          <!-- Barre de progression -->
+          <div class="h-[2px] w-full" :style="{ background: toast.color + '20' }">
+            <div class="h-full achievement-progress-bar" :style="{ background: toast.color, '--dur': '5.5s' }"></div>
+          </div>
+        </div>
+
+        <!-- ══ DEFAULT ══ -->
+        <div
+          v-else
           v-for="toast in toasts"
           :key="toast.id"
           class="pointer-events-auto relative overflow-hidden rounded-2xl border shadow-2xl w-72"
@@ -26,7 +75,6 @@
 
             <!-- Corps -->
             <div class="flex items-center gap-3">
-              <!-- Icône avec glow -->
               <div class="relative shrink-0">
                 <div class="absolute inset-0 rounded-full blur-md opacity-60" :style="{ background: toast.color }"></div>
                 <div class="relative w-12 h-12 rounded-full flex items-center justify-center text-[26px] border"
@@ -34,7 +82,6 @@
                   {{ toast.icon }}
                 </div>
               </div>
-
               <div class="flex-1 min-w-0">
                 <div class="text-[13px] font-extrabold text-white leading-tight">{{ toast.name }}</div>
                 <div class="text-[11px] text-ink-3 mt-0.5 leading-snug">{{ toast.description }}</div>
@@ -49,12 +96,10 @@
 
           <!-- Barre de progression -->
           <div class="h-[2px] w-full" :style="{ background: toast.color + '22' }">
-            <div
-              class="h-full achievement-progress-bar"
-              :style="{ background: toast.color, '--dur': '5.5s' }"
-            ></div>
+            <div class="h-full achievement-progress-bar" :style="{ background: toast.color, '--dur': '5.5s' }"></div>
           </div>
         </div>
+
       </TransitionGroup>
     </div>
   </Teleport>
@@ -62,6 +107,7 @@
 
 <script setup>
 import { useAchievementToast } from '@/composables/useAchievementToast.js'
+import { layout }              from '@/composables/useTheme.js'
 const { toasts, dismiss } = useAchievementToast()
 </script>
 

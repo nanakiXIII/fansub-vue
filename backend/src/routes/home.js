@@ -5,6 +5,7 @@ const Release    = require('../models/Release')
 const News       = require('../models/News')
 const User       = require('../models/User')
 const { optionalAuth } = require('../middleware/auth')
+const { findEpisode }  = require('../utils/episodeLookup')
 
 const router = express.Router()
 
@@ -23,7 +24,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
 
     const [inProgressDocs, releaseDocs, newsDocs, seriesCount, memberCount, seriesAll] = await Promise.all([
       InProgress.find(inProgressFilter).sort({ order: 1, createdAt: 1 }),
-      Release.find().sort({ releasedAt: -1 }).limit(6),
+      Release.find().sort({ releasedAt: -1 }).limit(30),
       News.find(preview ? {} : { published: true }).sort({ createdAt: -1 }).limit(5),
       Series.countDocuments(seriesFilter),
       User.countDocuments(),
@@ -67,21 +68,12 @@ router.get('/', optionalAuth, async (req, res, next) => {
     }).filter(Boolean)
 
     // Releases : 6 dernières jointes avec leurs séries + épisode + dateLabel + isNew
+    // On filtre les épisodes masqués et on prend les 6 premiers visibles
     const releases = releaseDocs.map(r => {
       const serie = seriesMap[r.serieId]
       if (!serie) return null
 
-      // Cherche l'épisode dans les saisons ou episodes directs
-      let episode = null
-      if (serie.seasons?.length) {
-        const season = serie.seasons.find(s => s.slug === r.seasonSlug)
-        if (season) {
-          episode = season.episodes?.find(e => e.num === r.epNum) ?? null
-        }
-      }
-      if (!episode && serie.episodes?.length) {
-        episode = serie.episodes.find(e => e.num === r.epNum) ?? null
-      }
+      const episode = findEpisode(serie, r.seasonSlug, r.epNum)
 
       const tz = 'Europe/Paris'
       const calFmt = { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }
@@ -102,8 +94,11 @@ router.get('/', optionalAuth, async (req, res, next) => {
         gradient: serie.gradient,
       }
 
-      return { ...r.toObject(), serie: serieObj, episode: episode ? episode.toObject?.() ?? episode : null, dateLabel, isNew }
-    }).filter(Boolean)
+      const episodeObj = episode ? episode.toObject?.() ?? episode : null
+      if (episodeObj?.visible === false) return null
+
+      return { ...r.toObject(), serie: serieObj, episode: episodeObj, dateLabel, isNew }
+    }).filter(Boolean).slice(0, 6)
 
     // Stats
     const stats = {
@@ -113,7 +108,17 @@ router.get('/', optionalAuth, async (req, res, next) => {
       inProgress: inProgressDocs.length,
     }
 
-    res.json({ carousel, releases, news: newsDocs, stats })
+    // News enrichies avec les données de la série liée
+    const news = newsDocs.map(n => {
+      const obj = n.toObject()
+      if (n.serieId && seriesMap[n.serieId]) {
+        const s = seriesMap[n.serieId]
+        obj.serie = { id: s.id, title: s.title, banner: s.banner, poster: s.poster, gradient: s.gradient }
+      }
+      return obj
+    })
+
+    res.json({ carousel, releases, news, stats })
   } catch (err) { next(err) }
 })
 

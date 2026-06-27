@@ -1,8 +1,11 @@
-const express = require('express')
-const Stat    = require('../models/Stat')
-const News    = require('../models/News')
-const Comment = require('../models/Comment')
-const Series  = require('../models/Series')
+const express        = require('express')
+const Stat           = require('../models/Stat')
+const News           = require('../models/News')
+const Comment        = require('../models/Comment')
+const Series         = require('../models/Series')
+const WatchProgress  = require('../models/WatchProgress')
+const Download       = require('../models/Download')
+const UserAchievement = require('../models/UserAchievement')
 const { requireAuth, requirePermission } = require('../middleware/auth')
 const { checkForUser } = require('../services/achievementChecker')
 
@@ -73,7 +76,44 @@ router.get('/', requireAuth, requirePermission('stats.view'), async (_req, res) 
     ]),
   ])
 
-  res.json({ totalViews, totalDownloads, topSeriesViews, topEpisodesViews, topEpisodesDownloads, topSeriesDownloads })
+  const [
+    totalWatched, totalWatchedCompleted, totalMemberDownloads, totalAchievements,
+    topSeriesWatched, topSeriesDownloadedByMembers,
+  ] = await Promise.all([
+    WatchProgress.countDocuments(),
+    WatchProgress.countDocuments({ pct: { $gte: 90 } }),
+    Download.countDocuments(),
+    UserAchievement.countDocuments(),
+    WatchProgress.aggregate([
+      { $group: { _id: '$serieId', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 },
+    ]),
+    Download.aggregate([
+      { $group: { _id: '$serieId', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 },
+    ]),
+  ])
+
+  // Enrichir avec les titres de séries
+  const Series = require('../models/Series')
+  const allSerieIds = [
+    ...topSeriesWatched.map(r => r._id),
+    ...topSeriesDownloadedByMembers.map(r => r._id),
+  ]
+  const seriesDocs = await Series.find({ id: { $in: allSerieIds } }, 'id title').lean()
+  const seriesMap  = Object.fromEntries(seriesDocs.map(s => [s.id, s.title]))
+
+  const memberTopSeriesViews     = topSeriesWatched.map(r => ({ _id: r._id, title: seriesMap[r._id] || r._id, count: r.count }))
+  const memberTopSeriesDownloads = topSeriesDownloadedByMembers.map(r => ({ _id: r._id, title: seriesMap[r._id] || r._id, count: r.count }))
+
+  res.json({
+    totalViews, totalDownloads,
+    topSeriesViews, topEpisodesViews, topEpisodesDownloads, topSeriesDownloads,
+    totalWatched, totalWatchedCompleted, totalMemberDownloads, totalAchievements,
+    memberTopSeriesViews, memberTopSeriesDownloads,
+  })
 })
 
 // GET /api/stats/series — stats complètes par série (admin)
@@ -201,6 +241,50 @@ router.get('/comments', requireAuth, requirePermission('stats.view'), async (_re
         count:     r.count,
       })),
     })
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
+// GET /api/stats/membres — stats par membre (admin)
+router.get('/membres', requireAuth, requirePermission('stats.view'), async (_req, res) => {
+  try {
+    const User = require('../models/User')
+
+    const [watchCounts, dlCounts, achievCounts, users] = await Promise.all([
+      WatchProgress.aggregate([
+        { $group: { _id: '$userId', watched: { $sum: 1 }, completed: { $sum: { $cond: [{ $gte: ['$pct', 90] }, 1, 0] } } } },
+      ]),
+      Download.aggregate([
+        { $group: { _id: '$userId', downloads: { $sum: 1 } } },
+      ]),
+      UserAchievement.aggregate([
+        { $group: { _id: '$userId', achievements: { $sum: 1 } } },
+      ]),
+      User.find({}, 'username avatar isAdmin createdAt').lean(),
+    ])
+
+    const watchMap  = Object.fromEntries(watchCounts.map(r => [String(r._id),  r]))
+    const dlMap     = Object.fromEntries(dlCounts.map(r    => [String(r._id),  r]))
+    const achievMap = Object.fromEntries(achievCounts.map(r => [String(r._id), r]))
+
+    const rows = users.map(u => {
+      const id = String(u._id)
+      return {
+        _id:          u._id,
+        username:     u.username,
+        avatar:       u.avatar,
+        isAdmin:      u.isAdmin,
+        createdAt:    u.createdAt,
+        watched:      watchMap[id]?.watched      ?? 0,
+        completed:    watchMap[id]?.completed    ?? 0,
+        downloads:    dlMap[id]?.downloads       ?? 0,
+        achievements: achievMap[id]?.achievements ?? 0,
+      }
+    })
+
+    const top10Watchers   = [...rows].sort((a, b) => b.watched   - a.watched).slice(0, 10)
+    const top10Downloaders = [...rows].sort((a, b) => b.downloads - a.downloads).slice(0, 10)
+
+    res.json({ rows, top10Watchers, top10Downloaders })
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 

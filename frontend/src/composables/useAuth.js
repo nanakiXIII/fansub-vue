@@ -2,9 +2,9 @@ import { ref } from 'vue'
 import { authService } from '@/services/auth.js'
 import { useSettings } from './useSettings.js'
 import { userSync } from '@/services/userSync.js'
-import { hydrateFromServer as hydrateFavorites, resetFavorites } from './useFavorites.js'
-import { hydrateFromServer as hydrateProgress,  resetProgress  } from './useProgress.js'
-import { hydrateFromServer as hydrateDownloads, resetDownloads } from './useDownloads.js'
+import { hydrateFromServer as hydrateFavorites, resetFavorites, useFavorites } from './useFavorites.js'
+import { hydrateFromServer as hydrateProgress,  resetProgress,  useProgress  } from './useProgress.js'
+import { hydrateFromServer as hydrateDownloads, resetDownloads, useDownloads } from './useDownloads.js'
 import { useAchievementToast } from './useAchievementToast.js'
 import { useSocket } from './useSocket.js'
 import { http } from '@/services/http.js'
@@ -24,6 +24,36 @@ function syncSettings(user, settings) {
   settings.roleColor   = user.roleColor ?? null
   settings.activeTitle = user.activeTitle ?? null
   settings.permissions = user.permissions ?? []
+}
+
+// Envoie la progression/favoris/téléchargements anonymes (accumulés avant inscription) vers le
+// compte qui vient d'être créé. Sans ça, le fetchAndHydrate() qui suit écraserait ces données
+// locales avec l'état (vide) du nouveau compte côté serveur.
+async function pushLocalDataToServer() {
+  const { favorites }              = useFavorites()
+  const { store: progressStore }   = useProgress()
+  const { dlHistory }              = useDownloads()
+
+  const tasks = []
+
+  for (const serieId of favorites.value) {
+    tasks.push(userSync.addFavorite(serieId).catch(() => {}))
+  }
+
+  for (const serieId in progressStore) {
+    for (const seasonSlug in progressStore[serieId]) {
+      for (const epNum in progressStore[serieId][seasonSlug]) {
+        const pct = progressStore[serieId][seasonSlug][epNum]
+        tasks.push(userSync.updateProgress(serieId, seasonSlug, Number(epNum), pct).catch(() => {}))
+      }
+    }
+  }
+
+  for (const dl of dlHistory.value) {
+    tasks.push(userSync.addDownload(dl.serieId, dl.seasonSlug, dl.epNum, dl.quality, dl.lang).catch(() => {}))
+  }
+
+  await Promise.all(tasks)
 }
 
 async function fetchAndHydrate() {
@@ -88,7 +118,10 @@ export function useAuth() {
     if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken)
     authUser.value = user
     syncSettings(user, settings)
+    await pushLocalDataToServer()
     fetchAndHydrate()
+    checkAchievements()
+    useSocket().connect(token)
     return user
   }
 

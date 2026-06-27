@@ -108,6 +108,14 @@
               </span>
               <span v-else>Mon profil</span>
             </RouterLink>
+            <RouterLink to="/profil?tab=activity" class="flex items-center gap-2.5 px-3.5 py-2.5 text-[12px] font-medium text-ink-1 hover:bg-white/[0.05] transition-colors" @click="profileOpen = false">
+              <svg class="w-3.5 h-3.5 text-ink-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Activité
+            </RouterLink>
+            <RouterLink to="/profil?tab=settings" class="flex items-center gap-2.5 px-3.5 py-2.5 text-[12px] font-medium text-ink-1 hover:bg-white/[0.05] transition-colors" @click="profileOpen = false">
+              <svg class="w-3.5 h-3.5 text-ink-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Paramètres
+            </RouterLink>
 
             <template v-if="settings.isAdmin || settings.permissions?.length">
               <div class="h-px bg-white/[0.07] mx-3"></div>
@@ -295,51 +303,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
 import { config } from '@/config.js'
-import { useSettings } from '@/composables/useSettings.js'
-import { useAuth } from '@/composables/useAuth.js'
-import { useChat } from '@/composables/useChat.js'
+import { useNavbar } from '@/composables/useNavbar.js'
 import NotificationBell from '@/components/NotificationBell.vue'
 
-const settings       = useSettings()
-const { logout }     = useAuth()
-const { unread: chatUnread } = useChat()
-const router         = useRouter()
-const mobileMenuOpen = ref(false)
-const profileOpen    = ref(false)
-const profileRef     = ref(null)
-
-const defaultAvatar = 'linear-gradient(135deg,#f97316,#fb923c)'
-const navInitials   = computed(() =>
-  (settings.username ?? '').replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase() || '?'
-)
-function isImageUrl(val) {
-  return typeof val === 'string' && (val.startsWith('http') || val.startsWith('https') || val.startsWith('data:'))
-}
-
-const navLinks = [
-  { to: '/',          label: 'Accueil'    },
-  { to: '/catalogue', label: 'Catalogue'  },
-  { to: '/equipe',    label: 'Équipe'     },
-]
-
-function onOutsideClick(e) {
-  if (profileRef.value && !profileRef.value.contains(e.target)) {
-    profileOpen.value = false
-  }
-}
-
-function handleLogout() {
-  logout()
-  profileOpen.value    = false
-  mobileMenuOpen.value = false
-  router.push('/')
-}
-
-onMounted(() => document.addEventListener('click', onOutsideClick))
-onBeforeUnmount(() => document.removeEventListener('click', onOutsideClick))
+const {
+  settings, chatUnread, mobileMenuOpen, profileOpen, profileRef,
+  defaultAvatar, navInitials, isImageUrl, navLinks, handleLogout,
+} = useNavbar('linear-gradient(135deg,#f97316,#fb923c)')
 </script>
 
 <style scoped>

@@ -1,10 +1,14 @@
-﻿<template>
+<template>
   <div class="relative" ref="bellRef">
-    <!-- Bouton cloche — même style que le bouton profil de la navbar -->
+    <!-- Bouton cloche -->
     <button
       @click="open = !open"
-      class="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
-      :class="open ? 'bg-bg-2 text-white' : 'text-ink-2 hover:bg-bg-2 hover:text-white'"
+      class="relative flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium transition-colors"
+      :class="[
+        layout === 'gundam'
+          ? (open ? 'text-orange border border-orange/40 bg-orange/10' : 'text-ink-2 border border-transparent hover:border-orange/30 hover:text-orange')
+          : (open ? 'bg-bg-2 text-white rounded-lg' : 'text-ink-2 hover:bg-bg-2 hover:text-white rounded-lg')
+      ]"
       aria-label="Notifications"
     >
       <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
@@ -22,53 +26,79 @@
     <Transition name="notif-drop">
       <div
         v-if="open"
-        class="absolute right-0 top-full mt-2 w-80 bg-bg-1 border border-white/[0.1] rounded-xl shadow-2xl overflow-hidden z-50"
+        class="absolute right-0 top-full mt-2 w-80 overflow-hidden z-50 shadow-2xl"
+        :class="layout === 'gundam'
+          ? 'bg-bg-1 border border-orange/20 border-l-[3px] border-l-orange/50'
+          : 'bg-bg-1 border border-white/[0.1] rounded-xl'"
       >
         <!-- Header -->
-        <div class="flex items-center justify-between px-3.5 py-2.5 border-b border-white/[0.07]">
-          <span class="text-[12px] font-bold text-white">Notifications</span>
+        <div class="flex items-center justify-between px-3.5 py-2.5 border-b"
+          :class="layout === 'gundam' ? 'border-orange/10' : 'border-white/[0.07]'"
+        >
+          <span v-if="layout === 'gundam'" class="text-[9px] font-mono tracking-[0.2em] uppercase text-orange/70">
+            // NOTIFICATIONS
+          </span>
+          <span v-else class="text-[12px] font-bold text-white">Notifications</span>
           <button
             v-if="unreadCount > 0"
             @click="markAllRead"
-            class="text-[10px] font-medium text-orange hover:text-orange-hover transition-colors"
+            class="text-[10px] font-medium text-orange hover:text-orange/80 transition-colors"
+            :class="layout === 'gundam' ? 'font-mono tracking-wider' : ''"
           >
-            Tout marquer lu
+            {{ layout === 'gundam' ? '[ TOUT LU ]' : 'Tout marquer lu' }}
           </button>
         </div>
 
         <!-- Liste -->
         <div class="max-h-[380px] overflow-y-auto">
-          <div v-if="notifications.length === 0" class="text-center py-10 text-ink-3 text-[12px]">
-            Aucune notification
+          <div v-if="notifications.length === 0"
+            class="text-center py-10 text-ink-3"
+            :class="layout === 'gundam' ? 'text-[10px] font-mono tracking-widest' : 'text-[12px]'"
+          >
+            {{ layout === 'gundam' ? '// AUCUNE NOTIFICATION' : 'Aucune notification' }}
           </div>
 
           <div
             v-for="notif in notifications"
             :key="notif._id"
-            class="group flex items-start gap-2.5 px-3 py-2.5 border-b border-white/[0.04] last:border-0 cursor-pointer transition-colors"
-            :class="notif.read ? 'hover:bg-white/[0.03]' : 'bg-orange/5 hover:bg-orange/[0.08]'"
+            class="group flex items-start gap-2.5 px-3 py-2.5 border-b last:border-0 cursor-pointer transition-colors"
+            :class="[
+              layout === 'gundam'
+                ? (notif.read
+                    ? 'border-orange/[0.06] hover:bg-orange/[0.04] border-l-[2px] border-l-transparent hover:border-l-orange/30'
+                    : 'border-orange/[0.08] bg-orange/[0.06] hover:bg-orange/[0.1] border-l-[2px] border-l-orange/60')
+                : (notif.read
+                    ? 'border-white/[0.04] hover:bg-white/[0.03]'
+                    : 'border-white/[0.04] bg-orange/5 hover:bg-orange/[0.08]')
+            ]"
             @click="handleClick(notif)"
           >
             <!-- Poster miniature -->
-            <div class="w-9 h-12 rounded-md overflow-hidden shrink-0 relative bg-bg-3">
+            <div class="w-9 h-12 shrink-0 relative bg-bg-3 overflow-hidden"
+              :class="layout === 'gundam' ? '' : 'rounded-md'"
+            >
               <img loading="lazy" v-if="notif.seriePoster" :src="notif.seriePoster" class="absolute inset-0 w-full h-full object-cover" />
             </div>
             <!-- Texte -->
             <div class="flex-1 min-w-0">
-              <div class="text-[11px] font-semibold text-white leading-snug mb-0.5 line-clamp-2">
-                {{ notif.serieTitle }}
+              <div class="font-semibold text-white leading-snug mb-0.5 line-clamp-2"
+                :class="layout === 'gundam' ? 'text-[10px] font-mono' : 'text-[11px]'"
+              >{{ notif.serieTitle }}</div>
+              <div class="text-ink-2 mb-1"
+                :class="layout === 'gundam' ? 'text-[9px] font-mono' : 'text-[10px]'"
+              >
+                EP{{ String(notif.epNum).padStart(2, '0') }}
+                <span v-if="notif.epTitle && notif.epTitle !== `Épisode ${notif.epNum}`"> — {{ notif.epTitle }}</span>
+                <span class="text-ink-3 ml-1">{{ layout === 'gundam' ? '[DISPO]' : 'est disponible' }}</span>
               </div>
-              <div class="text-[10px] text-ink-2 mb-1">
-                Épisode {{ notif.epNum }}
-                <span v-if="notif.epTitle && notif.epTitle !== `Épisode ${notif.epNum}`">
-                  — {{ notif.epTitle }}
-                </span>
-                <span class="text-ink-3 ml-1">est disponible</span>
-              </div>
-              <div class="text-[10px] text-ink-3">{{ timeAgo(notif.createdAt) }}</div>
+              <div class="text-ink-3"
+                :class="layout === 'gundam' ? 'text-[8px] font-mono tracking-wider' : 'text-[10px]'"
+              >{{ timeAgo(notif.createdAt) }}</div>
             </div>
             <!-- Point non lu -->
-            <div v-if="!notif.read" class="w-1.5 h-1.5 rounded-full bg-orange mt-1.5 shrink-0"></div>
+            <div v-if="!notif.read" class="w-1.5 h-1.5 mt-1.5 shrink-0"
+              :class="layout === 'gundam' ? 'bg-orange' : 'bg-orange rounded-full'"
+            ></div>
             <!-- Bouton supprimer -->
             <button
               @click.stop="remove(notif._id)"
@@ -88,8 +118,9 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter }        from 'vue-router'
 import { useNotifications } from '@/composables/useNotifications.js'
+import { layout }           from '@/composables/useTheme.js'
 
 const { notifications, unreadCount, markRead, markAllRead, remove } = useNotifications()
 const router  = useRouter()

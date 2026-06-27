@@ -1,16 +1,36 @@
 const mongoose = require('mongoose')
 const bcrypt   = require('bcryptjs')
 
+const favoriteMediaSchema = new mongoose.Schema({
+  tmdbId:     { type: Number, required: true },
+  mediaType:  { type: String, enum: ['movie', 'tv'], required: true },
+  title:      { type: String, required: true },
+  posterPath: { type: String, default: '' },
+  year:       { type: String, default: '' },
+}, { _id: false })
+
 const userSchema = new mongoose.Schema({
   username:  { type: String, required: true, unique: true, trim: true, minlength: 3, maxlength: 20 },
-  email:     { type: String, unique: true, sparse: true, lowercase: true, trim: true, default: null },
+  // Pas de `default: null` sur email/googleId/discordId : un sparse index unique exclut les champs
+  // absents, mais PAS les valeurs `null` explicites — un default null créerait une collision dès
+  // le 2e compte qui n'a pas ce champ (cf. bug "pseudo ou email déjà utilisé" sur un compte neuf).
+  email:     { type: String, unique: true, sparse: true, lowercase: true, trim: true },
   password:  { type: String, default: null },
-  googleId:  { type: String, unique: true, sparse: true, default: null },
-  discordId: { type: String, unique: true, sparse: true, default: null },
+  googleId:  { type: String, unique: true, sparse: true },
+  discordId: { type: String, unique: true, sparse: true },
   isAdmin:   { type: Boolean, default: false },
   avatar:        { type: String, default: null },
   role:          { type: String, default: null },
   activeTitleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Achievement', default: null },
+  socials: {
+    discord:     { type: String, default: '' },
+    psn:         { type: String, default: '' },
+    xbox:        { type: String, default: '' },
+    switch:      { type: String, default: '' },
+    steam:       { type: String, default: '' },
+    myanimelist: { type: String, default: '' },
+  },
+  favoriteMedia: [favoriteMediaSchema],
 }, { timestamps: true })
 
 userSchema.pre('save', async function (next) {

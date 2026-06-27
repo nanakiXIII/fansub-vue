@@ -26,6 +26,8 @@ watch(theme, (value) => {
 export const layouts = [
   { id: 'default', label: 'Classique',     icon: '▣' },
   { id: 'glass',   label: 'Glassmorphism', icon: '◈' },
+  { id: 'gundam',  label: 'Gundam',        icon: '⚙' },
+  { id: 'flux',    label: 'FLUX 2026',     icon: '◆' },
 ]
 
 const storedLayout = getCookie('layout')
@@ -33,5 +35,6 @@ export const layout = ref(layouts.some(l => l.id === storedLayout) ? storedLayou
 
 watch(layout, (value) => {
   document.documentElement.setAttribute('data-layout', value)
+  document.documentElement.style.removeProperty('background-color')
   setCookie('layout', value)
 }, { immediate: true })
