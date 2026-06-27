@@ -154,6 +154,41 @@ router.get('/me', requireAuth, async (req, res) => {
   res.json(await sanitizeUser(req.user))
 })
 
+// POST /api/auth/claim-admin — token usage unique défini dans ADMIN_CLAIM_TOKEN.
+// Le fichier claimFlagPath agit comme verrou : sa simple présence invalide le token
+// pour toute tentative suivante, même après redémarrage du serveur.
+const claimFlagPath = path.join(__dirname, '../../data/admin-claim.used')
+router.post('/claim-admin',
+  requireAuth,
+  body('token').notEmpty().withMessage('Token requis'),
+  async (req, res, next) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
+    try {
+      const expected = process.env.ADMIN_CLAIM_TOKEN
+      if (!expected) return res.status(403).json({ error: 'Fonctionnalité désactivée.' })
+
+      const given = Buffer.from(String(req.body.token))
+      const ref   = Buffer.from(expected)
+      const valid = given.length === ref.length && crypto.timingSafeEqual(given, ref)
+      if (!valid) return res.status(403).json({ error: 'Token invalide.' })
+
+      try {
+        fs.mkdirSync(path.dirname(claimFlagPath), { recursive: true })
+        fs.writeFileSync(claimFlagPath, JSON.stringify({ usedAt: new Date(), userId: req.user._id, username: req.user.username }), { flag: 'wx' })
+      } catch (e) {
+        if (e.code === 'EEXIST') return res.status(410).json({ error: 'Ce token a déjà été utilisé.' })
+        throw e
+      }
+
+      req.user.isAdmin = true
+      await req.user.save()
+      logAudit(req, 'user.admin_claim', req.user._id, { username: req.user.username })
+      res.json({ user: await sanitizeUser(req.user) })
+    } catch (err) { next(err) }
+  }
+)
+
 // PATCH /api/auth/me
 router.patch('/me',
   requireAuth,

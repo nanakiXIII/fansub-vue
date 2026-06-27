@@ -25,6 +25,7 @@ frontend/dist-ssr/
 # ─────────────────────────────────────────────────────────────────
 backend/uploads/avatars/
 backend/uploads/news/
+backend/data/
 
 # ─────────────────────────────────────────────────────────────────
 # Logs

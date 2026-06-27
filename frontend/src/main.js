@@ -17,6 +17,7 @@ import ClassementPage  from './views/ClassementPage.vue'
 import PublicProfilePage from './views/PublicProfilePage.vue'
 import LoginPage          from './views/LoginPage.vue'
 import RegisterPage       from './views/RegisterPage.vue'
+import ClaimAdminPage     from './views/ClaimAdminPage.vue'
 import AuthCallbackPage   from './views/AuthCallbackPage.vue'
 import RecruitPage     from './views/RecruitPage.vue'
 import ChatPage        from './views/ChatPage.vue'
@@ -109,6 +110,7 @@ const router = createRouter({
     { path: '/profil/:id',         component: PublicProfilePage, meta: { title: 'Profil'      } },
     { path: '/connexion',          component: LoginPage,        meta: { title: 'Connexion'   } },
     { path: '/inscription',        component: RegisterPage,     meta: { title: 'Inscription' } },
+    { path: '/devenir-admin',      component: ClaimAdminPage,   meta: { title: 'Devenir admin' } },
     { path: '/auth/callback',      component: AuthCallbackPage, meta: { title: null          } },
     { path: '/watch/:id/:season/:ep', component: PlayerPage, meta: { title: null             } },
     {

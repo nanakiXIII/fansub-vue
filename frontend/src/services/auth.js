@@ -9,6 +9,7 @@ export const authService = {
   updateProfile: (data)                      => http.patch('/auth/me', data),
   deleteAccount:  ()                          => http.delete('/auth/me'),
   checkUsername:  (username)                 => http.get(`/auth/check-username?username=${encodeURIComponent(username)}`),
+  claimAdmin:    (token)                     => http.post('/auth/claim-admin', { token }),
 
   uploadAvatar: async (file) => {
     const form = new FormData()
