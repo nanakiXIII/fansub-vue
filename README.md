@@ -231,6 +231,32 @@ pm2 save && pm2 startup
 ### 3. Nginx — reverse proxy
 
 ```nginx
+# Bots de prévisualisation de liens (Discord, Twitter/X, Facebook, Slack...) — ils ne
+# rendent pas le JS donc ne voient jamais les balises Open Graph posées dynamiquement
+# par useSeo.js côté client. On les renvoie vers le backend qui leur sert du HTML avec
+# les bonnes meta déjà remplies pour la page demandée (cf. backend/src/routes/preview.js).
+map $http_user_agent $is_preview_bot {
+    default 0;
+    ~*discordbot         1;
+    ~*twitterbot         1;
+    ~*facebookexternalhit 1;
+    ~*facebot            1;
+    ~*slackbot           1;
+    ~*telegrambot        1;
+    ~*whatsapp           1;
+    ~*linkedinbot        1;
+    ~*pinterest          1;
+    ~*redditbot          1;
+    ~*skypeuripreview    1;
+    ~*vkshare            1;
+    ~*tumblr             1;
+    ~*viber              1;
+    ~*embedly            1;
+    ~*w3c_validator      1;
+    ~*flipboard          1;
+    ~*line/              1;
+}
+
 server {
     listen 443 ssl http2;
     server_name votre-domaine.fr;
@@ -240,6 +266,10 @@ server {
 
     # SPA — Vue Router
     location / {
+        if ($is_preview_bot) {
+            rewrite ^(.*)$ /_preview$1 break;
+            proxy_pass http://127.0.0.1:3000;
+        }
         try_files $uri $uri/ /index.html;
     }
 

@@ -17,6 +17,16 @@
         reverse_proxy backend:3000
     }
 
+    # Bots de prévisualisation de liens (Discord, Twitter/X, Facebook, Slack...) — ils ne
+    # rendent pas le JS donc ne voient jamais les balises posées par useSeo.js côté client.
+    # On les redirige vers le backend qui leur sert du HTML avec les bonnes meta Open Graph
+    # déjà remplies (titre, synopsis, image) pour la page demandée. Cf. backend/src/routes/preview.js.
+    @bot header_regexp User-Agent (?i)(discordbot|twitterbot|facebookexternalhit|facebot|slackbot|telegrambot|whatsapp|linkedinbot|pinterest|redditbot|skypeuripreview|vkshare|tumblr|viber|embedly|w3c_validator|flipboard|line/)
+    handle @bot {
+        rewrite * /_preview{uri}
+        reverse_proxy backend:3000
+    }
+
     # Tout le reste (SPA) — dans son propre handle pour forcer cet ordre
     # après les blocs ci-dessus (file_server/try_files hors handle peuvent
     # s'exécuter avant eux, peu importe l'ordre d'écriture dans ce fichier).

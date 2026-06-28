@@ -32,6 +32,7 @@ const auditRouter          = require('./routes/audit')
 const sitemapRouter        = require('./routes/sitemap')
 const rssRouter            = require('./routes/rss')
 const leaderboardRouter    = require('./routes/leaderboard')
+const previewRouter        = require('./routes/preview')
 
 const { passport } = require('./passport')
 
@@ -91,6 +92,11 @@ app.use('/api/leaderboard',    leaderboardRouter)
 
 app.use('/sitemap.xml',        sitemapRouter)
 app.use('/rss.xml',            rssRouter)
+
+// Aperçus pour les bots de réseaux sociaux (Discord, Twitter/X, Facebook...) — voir
+// backend/src/routes/preview.js. Mappé sous /_preview pour ne jamais entrer en conflit
+// avec les routes /api/*, c'est Caddy/Nginx qui réécrit l'URL des bots vers ce préfixe.
+app.use('/_preview', previewRouter)
 
 app.use(errorHandler)
 
