@@ -24,7 +24,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
 
     const [inProgressDocs, releaseDocs, newsDocs, seriesCount, memberCount, seriesAll] = await Promise.all([
       InProgress.find(inProgressFilter).sort({ order: 1, createdAt: 1 }),
-      Release.find().sort({ releasedAt: -1 }).limit(30),
+      Release.find().sort({ releasedAt: -1 }).limit(100),
       News.find(preview ? {} : { published: true }).sort({ createdAt: -1 }).limit(5),
       Series.countDocuments(seriesFilter),
       User.countDocuments(),
