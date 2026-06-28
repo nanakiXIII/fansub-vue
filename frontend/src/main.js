@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import './style.css'
 import { config } from './config.js'
+import { uuid } from './utils/uuid.js'
 
 import HomePage        from './views/HomePage.vue'
 import CataloguePage   from './views/CataloguePage.vue'
@@ -68,7 +69,7 @@ function buildLocationData(route) {
 // ── Tracking analytics ─────────────────────────────────────────────
 function getOrCreateSessionId() {
   let id = sessionStorage.getItem('fansub_sid')
-  if (!id) { id = crypto.randomUUID(); sessionStorage.setItem('fansub_sid', id) }
+  if (!id) { id = uuid(); sessionStorage.setItem('fansub_sid', id) }
   return id
 }
 function classifyPath(path) {
