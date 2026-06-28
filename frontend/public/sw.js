@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fansub-cache-v1'
+const CACHE_NAME = 'fansub-cache-v2'
 const SHELL = ['/', '/manifest.webmanifest', '/icon.svg']
 
 self.addEventListener('install', (event) => {
@@ -29,7 +29,8 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then(res => {
-          caches.open(CACHE_NAME).then(cache => cache.put(request, res.clone()))
+          const copy = res.clone()
+          caches.open(CACHE_NAME).then(cache => cache.put(request, copy))
           return res
         })
         .catch(() => caches.match(request).then(cached => cached || caches.match('/')))
@@ -37,15 +38,18 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Ressources statiques same-origin : cache d'abord, rafraîchies en arrière-plan.
+  // Ressources statiques same-origin : cache d'abord, sinon réseau.
   if (url.origin === self.location.origin) {
     event.respondWith(
       caches.match(request).then(cached => {
-        const network = fetch(request).then(res => {
-          if (res.ok) caches.open(CACHE_NAME).then(cache => cache.put(request, res.clone()))
+        if (cached) return cached
+        return fetch(request).then(res => {
+          if (res.ok) {
+            const copy = res.clone()
+            caches.open(CACHE_NAME).then(cache => cache.put(request, copy))
+          }
           return res
-        }).catch(() => cached)
-        return cached || network
+        })
       })
     )
   }
