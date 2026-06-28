@@ -47,15 +47,18 @@ services:
     networks:
       - fansub_net
 
-  # ── Frontend (nginx) ─────────────────────────────────────────────────────────
+  # ── Frontend (Caddy) ──────────────────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: fansub_frontend
     restart: unless-stopped
+    environment:
+      - SITE_DOMAIN=${SITE_DOMAIN:-http://localhost}
     ports:
       - "80:80"
+      - "443:443"
     depends_on:
       - backend
     networks:
