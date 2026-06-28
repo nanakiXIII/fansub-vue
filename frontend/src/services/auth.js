@@ -1,6 +1,6 @@
 import { http } from './http.js'
 
-const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+const BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 
 export const authService = {
   login:         (email, password)           => http.post('/auth/login',    { email, password }),
@@ -10,6 +10,11 @@ export const authService = {
   deleteAccount:  ()                          => http.delete('/auth/me'),
   checkUsername:  (username)                 => http.get(`/auth/check-username?username=${encodeURIComponent(username)}`),
   claimAdmin:    (token)                     => http.post('/auth/claim-admin', { token }),
+
+  forgotPassword:        (email)             => http.post('/auth/forgot-password', { email }),
+  resetPassword:         (token, password)   => http.post('/auth/reset-password', { token, password }),
+  verifyEmail:           (token)             => http.post('/auth/verify-email', { token }),
+  resendVerification:    ()                  => http.post('/auth/resend-verification'),
 
   uploadAvatar: async (file) => {
     const form = new FormData()

@@ -403,7 +403,7 @@ import { ref, computed, reactive, onMounted, onBeforeUnmount, nextTick } from 'v
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { http } from '@/services/http.js'
 
-const BASE   = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+const BASE   = import.meta.env.VITE_API_BASE_URL || '/api'
 const route  = useRoute()
 const router = useRouter()
 const isEdit = computed(() => !!route.params.id)

@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { useSettings } from '@/composables/useSettings.js'
 import { useAuth } from '@/composables/useAuth.js'
 import { useChat } from '@/composables/useChat.js'
+import { useBeta } from '@/composables/useBeta.js'
 
 export const navLinks = [
   { to: '/',           label: 'Accueil'    },
@@ -17,6 +18,7 @@ export function useNavbar(defaultAvatar = 'linear-gradient(135deg,#f97316,#fb923
   const settings       = useSettings()
   const { logout }     = useAuth()
   const { unread: chatUnread } = useChat()
+  const { chatEnabled } = useBeta()
   const router         = useRouter()
   const mobileMenuOpen = ref(false)
   const profileOpen    = ref(false)
@@ -43,7 +45,7 @@ export function useNavbar(defaultAvatar = 'linear-gradient(135deg,#f97316,#fb923
   onBeforeUnmount(() => document.removeEventListener('click', onOutsideClick))
 
   return {
-    settings, chatUnread, mobileMenuOpen, profileOpen, profileRef,
+    settings, chatUnread, chatEnabled, mobileMenuOpen, profileOpen, profileRef,
     defaultAvatar, navInitials, isImageUrl, navLinks, handleLogout,
   }
 }

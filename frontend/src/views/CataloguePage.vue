@@ -116,7 +116,7 @@
       <div v-if="viewMode === 'grid'"
            class="grid gap-3"
            style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr))">
-        <div v-for="s in filteredSeries" :key="s.id" :class="s.visible === false ? 'opacity-50 grayscale' : ''">
+        <div v-for="s in pagedSeries" :key="s.id" :class="s.visible === false ? 'opacity-50 grayscale' : ''">
           <AnimeCard :serie="s" />
         </div>
       </div>
@@ -124,7 +124,7 @@
       <!-- LIST VIEW -->
       <div v-else class="flex flex-col pb-4" :class="layout === 'gundam' ? 'gap-1.5' : 'gap-2'">
         <div
-          v-for="s in filteredSeries"
+          v-for="s in pagedSeries"
           :key="s.id"
           class="flex items-center gap-3 overflow-hidden cursor-pointer transition-all"
           :class="[
@@ -208,12 +208,19 @@
           </div>
         </div>
       </div>
+
+      <!-- Charger plus -->
+      <div v-if="visibleCount < filteredSeries.length" class="flex justify-center py-6">
+        <button class="btn-outline text-[12px] py-2 px-5" @click="visibleCount += PAGE_SIZE">
+          Charger plus ({{ filteredSeries.length - visibleCount }} restantes)
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import AnimeCard from '@/components/AnimeCard.vue'
 import { http } from '@/services/http.js'
@@ -326,6 +333,12 @@ const activeFilters = ref({
   sort:   'popularity',
 })
 
+// Affichage progressif : évite de monter des centaines de cartes d'un coup
+// quand le catalogue grandit. Recommence à zéro à chaque changement de filtre.
+const PAGE_SIZE = 60
+const visibleCount = ref(PAGE_SIZE)
+watch([search, activeGenre, activeFilters, viewMode], () => { visibleCount.value = PAGE_SIZE }, { deep: true })
+
 const filteredSeries = computed(() => {
   const canPreview = settings.isAdmin || settings.permissions?.includes('content.preview')
   let list = canPreview
@@ -359,4 +372,6 @@ const filteredSeries = computed(() => {
 
   return list
 })
+
+const pagedSeries = computed(() => filteredSeries.value.slice(0, visibleCount.value))
 </script>

@@ -24,6 +24,7 @@ function syncSettings(user, settings) {
   settings.roleColor   = user.roleColor ?? null
   settings.activeTitle = user.activeTitle ?? null
   settings.permissions = user.permissions ?? []
+  settings.emailVerified = user.emailVerified ?? true
 }
 
 // Envoie la progression/favoris/téléchargements anonymes (accumulés avant inscription) vers le
@@ -154,6 +155,7 @@ export function useAuth() {
     settings.roleColor   = null
     settings.activeTitle = null
     settings.permissions = []
+    settings.emailVerified = true
     resetFavorites()
     resetProgress()
     resetDownloads()

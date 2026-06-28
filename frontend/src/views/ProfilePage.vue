@@ -212,6 +212,12 @@
               </span>
               <span v-if="saveError" class="text-[11px] text-red-400">{{ saveError }}</span>
             </div>
+            <div v-if="!settings.emailVerified" class="mt-3 flex items-center justify-between gap-3 text-[11px] bg-orange/10 border border-orange/20 rounded-lg px-3 py-2">
+              <span class="text-orange/90">Adresse e-mail non confirmée — vérifie ta boîte de réception.</span>
+              <button type="button" class="text-orange font-semibold hover:text-orange-hover transition-colors shrink-0 disabled:opacity-60" :disabled="resendingVerif || resendSent" @click="resendVerification">
+                {{ resendingVerif ? 'Envoi…' : (resendSent ? 'Renvoyé ✓' : "Renvoyer l'e-mail") }}
+              </button>
+            </div>
           </div>
 
           <!-- Réseaux & jeux -->
@@ -778,6 +784,48 @@
         </div>
       </div>
 
+      <!-- Présentation de l'accueil -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">Présentation de l'accueil</div>
+        <div class="p-4 flex flex-col gap-5">
+
+          <!-- Actualités -->
+          <div>
+            <div class="text-[12px] font-semibold text-ink-1 mb-1.5">Actualités</div>
+            <div class="text-[11px] text-ink-3 mb-3 leading-relaxed max-w-md">Liste ou grille bento — indépendant du template ci-dessus.</div>
+            <div class="flex gap-3">
+              <button v-for="d in newsDisplays" :key="d.id" type="button"
+                class="flex-1 rounded-lg border-2 p-3 text-center transition-all cursor-pointer"
+                :class="newsDisplay === d.id ? 'border-orange bg-orange/10' : 'border-white/10 bg-bg-2 hover:border-white/25'"
+                @click="newsDisplay = d.id">
+                <div class="text-[12px] font-semibold text-ink-1 flex items-center justify-center gap-1.5">
+                  {{ d.label }}
+                  <svg v-if="newsDisplay === d.id" class="w-3.5 h-3.5 text-orange shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dernières sorties -->
+          <div class="border-t border-white/[0.06] pt-5">
+            <div class="text-[12px] font-semibold text-ink-1 mb-1.5">Dernières sorties</div>
+            <div class="text-[11px] text-ink-3 mb-3 leading-relaxed max-w-md">Réglable indépendamment des actualités ci-dessus.</div>
+            <div class="flex gap-3">
+              <button v-for="d in releasesDisplays" :key="d.id" type="button"
+                class="flex-1 rounded-lg border-2 p-3 text-center transition-all cursor-pointer"
+                :class="releasesDisplay === d.id ? 'border-orange bg-orange/10' : 'border-white/10 bg-bg-2 hover:border-white/25'"
+                @click="releasesDisplay = d.id">
+                <div class="text-[12px] font-semibold text-ink-1 flex items-center justify-center gap-1.5">
+                  {{ d.label }}
+                  <svg v-if="releasesDisplay === d.id" class="w-3.5 h-3.5 text-orange shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       <!-- Apparence -->
       <div class="sidebar-card">
         <div class="sidebar-card-header">Apparence</div>
@@ -846,6 +894,10 @@ import { useRoute } from 'vue-router'
 import { useBeta } from '@/composables/useBeta.js'
 import { overlayOpacity, overlayAlpha } from '@/composables/useImageOverlay.js'
 import { theme, themes, layout, layouts } from '@/composables/useTheme.js'
+import {
+  newsDisplay, newsDisplays,
+  releasesDisplay, releasesDisplays,
+} from '@/composables/usePresentation.js'
 import { useProgress } from '@/composables/useProgress.js'
 import { useSettings } from '@/composables/useSettings.js'
 import { useDownloads } from '@/composables/useDownloads.js'
@@ -1303,6 +1355,20 @@ async function saveEmail() {
     saveError.value = err.message || 'Erreur lors de la sauvegarde.'
   } finally {
     savingProfile.value = false
+  }
+}
+
+const resendingVerif = ref(false)
+const resendSent     = ref(false)
+async function resendVerification() {
+  resendingVerif.value = true
+  try {
+    await authService.resendVerification()
+    resendSent.value = true
+  } catch {
+    resendSent.value = false
+  } finally {
+    resendingVerif.value = false
   }
 }
 

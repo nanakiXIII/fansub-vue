@@ -4,6 +4,11 @@ const schema = new mongoose.Schema({
   betaEnabled:             { type: Boolean,  default: false },
   maintenanceEnabled:      { type: Boolean,  default: false },
   maintenanceAllowedRoles: { type: [String], default: []    },
+  foundedYear:             { type: Number,   default: 2019  },
+  registrationEnabled:     { type: Boolean,  default: true  },
+  chatEnabled:             { type: Boolean,  default: true  },
+  defaultTheme:            { type: String,   default: 'braise'  },
+  defaultLayout:           { type: String,   default: 'default' },
 }, { timestamps: true })
 
 // Singleton — on ne crée qu'un seul document

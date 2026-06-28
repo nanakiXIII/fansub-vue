@@ -37,13 +37,14 @@ router.get('/', optionalAuth, async (req, res, next) => {
       seriesMap[s.id] = s
     }
 
-    // Calcul du total d'épisodes
+    // Calcul du total d'épisodes et de saisons
     const totalEpisodes = seriesAll.reduce((acc, s) => {
       if (s.seasons?.length) {
         return acc + s.seasons.reduce((a, season) => a + (season.episodes?.length ?? 0), 0)
       }
       return acc + (s.episodes?.length ?? 0)
     }, 0)
+    const totalSeasons = seriesAll.reduce((acc, s) => acc + (s.seasons?.length ?? 0), 0)
 
     // Carrousel : inProgress jointé avec sa série
     const carousel = inProgressDocs.map(doc => {
@@ -104,6 +105,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
     const stats = {
       series:     seriesCount,
       episodes:   totalEpisodes,
+      seasons:    totalSeasons,
       team:       memberCount,
       inProgress: inProgressDocs.length,
     }

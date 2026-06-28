@@ -35,7 +35,7 @@
       <CookieBanner />
       <AchievementToast />
       <AppToast />
-      <ChatWidget />
+      <ChatWidget v-if="chatEnabled" />
       <BugReportWidget />
     </template>
     <!-- Toujours monté pour recevoir les alertes et les mises à jour settings -->
@@ -93,7 +93,7 @@ const { connect, socket } = useSocket()
 const settings    = useSettings()
 const { load: loadFollows, reset: resetFollows } = useFollows()
 const { load: loadNotifs, reset: resetNotifs, prepend: prependNotif } = useNotifications()
-const { maintenanceEnabled, maintenanceAllowedRoles } = useBeta()
+const { maintenanceEnabled, maintenanceAllowedRoles, chatEnabled } = useBeta()
 const currentNavbar = computed(() => {
   if (layout.value === 'glass')  return AppNavbarGlass
   if (layout.value === 'gundam') return AppNavbarGundam

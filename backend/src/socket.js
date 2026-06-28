@@ -2,6 +2,7 @@ const jwt         = require('jsonwebtoken')
 const User        = require('./models/User')
 const Role        = require('./models/Role')
 const ChatMessage = require('./models/ChatMessage')
+const SiteSettings = require('./models/SiteSettings')
 
 let _io = null
 const cooldowns     = new Map() // userId → lastMessageAt
@@ -86,6 +87,12 @@ function init(io) {
     // ── Réception d'un message ────────────────────────────────────
     socket.on('chat:send', async (data) => {
       if (!socket.user) return // non connecté → refus silencieux
+
+      const { chatEnabled } = await SiteSettings.get()
+      if (chatEnabled === false) {
+        socket.emit('chat:error', 'Le chat est actuellement désactivé.')
+        return
+      }
 
       const text = String(data?.text ?? '').trim().slice(0, 500)
       if (!text) return

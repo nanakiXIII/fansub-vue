@@ -7,14 +7,17 @@ const fs       = require('fs')
 const { body, validationResult } = require('express-validator')
 const User        = require('../models/User')
 const Role        = require('../models/Role')
+const SiteSettings = require('../models/SiteSettings')
 const Achievement = require('../models/Achievement')
 const { checkForUser } = require('../services/achievementChecker')
 const Favorite    = require('../models/Favorite')
 const WatchProgress = require('../models/WatchProgress')
 const Download    = require('../models/Download')
 const { requireAuth, requireAdmin, requirePermission } = require('../middleware/auth')
+const { authLimiter, sensitiveLimiter } = require('../middleware/rateLimit')
 const { passport, findOrCreate } = require('../passport')
 const { logAudit } = require('../services/audit')
+const { sendMail } = require('../services/mailer')
 
 const uploadsDir = path.join(__dirname, '../../uploads/avatars')
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
@@ -70,7 +73,24 @@ async function sanitizeUser(user) {
     const ach = await Achievement.findById(user.activeTitleId).select('rewardTitle color').lean()
     if (ach?.rewardTitle) activeTitle = { label: ach.rewardTitle, color: ach.color ?? null }
   }
-  return { id: user._id, username: user.username, email: user.email, isAdmin: user.isAdmin, avatar: user.avatar, role: user.role ?? null, roleLabel, roleColor, activeTitle, permissions, socials: user.socials ?? {}, favoriteMedia: user.favoriteMedia ?? [] }
+  return { id: user._id, username: user.username, email: user.email, isAdmin: user.isAdmin, emailVerified: user.emailVerified, avatar: user.avatar, role: user.role ?? null, roleLabel, roleColor, activeTitle, permissions, socials: user.socials ?? {}, favoriteMedia: user.favoriteMedia ?? [] }
+}
+
+// Tokens (vérification email / reset mot de passe) : on ne stocke jamais la valeur brute,
+// seulement son hash — comme un mot de passe, en cas de fuite de la base ça ne suffit pas
+// à réutiliser le lien.
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex')
+}
+
+async function sendVerificationEmail(user, rawToken) {
+  const url = `${FRONTEND_URL}/verifier-email?token=${rawToken}`
+  await sendMail({
+    to: user.email,
+    subject: 'Confirme ton adresse e-mail',
+    text: `Bienvenue ! Clique sur ce lien pour confirmer ton adresse e-mail : ${url}\nCe lien expire dans 24h.`,
+    html: `<p>Bienvenue !</p><p>Clique sur ce lien pour confirmer ton adresse e-mail : <a href="${url}">${url}</a></p><p>Ce lien expire dans 24h.</p>`,
+  })
 }
 
 const SOCIAL_KEYS = ['discord', 'psn', 'xbox', 'switch', 'steam', 'myanimelist']
@@ -91,6 +111,7 @@ function sanitizeFavoriteMedia(list) {
 
 // POST /api/auth/register
 router.post('/register',
+  authLimiter,
   body('username').trim().isLength({ min: 3, max: 20 }).withMessage('Pseudo : 3–20 caractères'),
   body('email').isEmail().normalizeEmail().withMessage('Email invalide'),
   body('password').isLength({ min: 6 }).withMessage('Mot de passe : 6 caractères minimum'),
@@ -98,8 +119,19 @@ router.post('/register',
     const errors = validationResult(req)
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
     try {
+      const settings = await SiteSettings.get()
+      if (settings.registrationEnabled === false) {
+        return res.status(403).json({ error: 'Les inscriptions sont actuellement fermées.' })
+      }
       const { username, email, password } = req.body
-      const user = await User.create({ username, email, password })
+      const verifyToken = crypto.randomBytes(32).toString('hex')
+      const user = await User.create({
+        username, email, password,
+        emailVerified:      false,
+        emailVerifyToken:   hashToken(verifyToken),
+        emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      })
+      sendVerificationEmail(user, verifyToken).catch(err => console.error('[mailer] vérification', err.message))
       res.status(201).json({ token: signToken(user._id), refreshToken: signRefreshToken(user._id), user: await sanitizeUser(user) })
     } catch (err) {
       if (err.code === 11000) {
@@ -113,8 +145,88 @@ router.post('/register',
   }
 )
 
+// POST /api/auth/resend-verification
+router.post('/resend-verification', requireAuth, sensitiveLimiter, async (req, res, next) => {
+  try {
+    if (req.user.emailVerified) return res.status(400).json({ error: 'Adresse e-mail déjà vérifiée.' })
+    if (!req.user.email) return res.status(400).json({ error: 'Aucune adresse e-mail associée à ce compte.' })
+    const verifyToken = crypto.randomBytes(32).toString('hex')
+    req.user.emailVerifyToken   = hashToken(verifyToken)
+    req.user.emailVerifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    await req.user.save()
+    await sendVerificationEmail(req.user, verifyToken)
+    res.json({ message: 'E-mail de vérification renvoyé.' })
+  } catch (err) { next(err) }
+})
+
+// POST /api/auth/verify-email
+router.post('/verify-email', sensitiveLimiter, body('token').notEmpty(), async (req, res, next) => {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
+  try {
+    const user = await User.findOne({
+      emailVerifyToken:   hashToken(req.body.token),
+      emailVerifyExpires: { $gt: new Date() },
+    })
+    if (!user) return res.status(400).json({ error: 'Lien invalide ou expiré.' })
+    user.emailVerified      = true
+    user.emailVerifyToken   = null
+    user.emailVerifyExpires = null
+    await user.save()
+    res.json({ message: 'Adresse e-mail confirmée.' })
+  } catch (err) { next(err) }
+})
+
+// POST /api/auth/forgot-password
+router.post('/forgot-password', sensitiveLimiter, body('email').isEmail().normalizeEmail(), async (req, res, next) => {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
+  try {
+    const user = await User.findOne({ email: req.body.email })
+    if (user) {
+      const resetToken = crypto.randomBytes(32).toString('hex')
+      user.passwordResetToken   = hashToken(resetToken)
+      user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000)
+      await user.save()
+      const url = `${FRONTEND_URL}/reinitialiser-mot-de-passe?token=${resetToken}`
+      sendMail({
+        to:      user.email,
+        subject: 'Réinitialisation de ton mot de passe',
+        text:    `Clique sur ce lien pour choisir un nouveau mot de passe : ${url}\nCe lien expire dans 1h. Si tu n'es pas à l'origine de cette demande, ignore cet e-mail.`,
+        html:    `<p>Clique sur ce lien pour choisir un nouveau mot de passe : <a href="${url}">${url}</a></p><p>Ce lien expire dans 1h. Si tu n'es pas à l'origine de cette demande, ignore cet e-mail.</p>`,
+      }).catch(err => console.error('[mailer] reset', err.message))
+    }
+    // Réponse identique que l'adresse existe ou non, pour ne pas permettre d'énumérer les comptes.
+    res.json({ message: 'Si cette adresse existe, un e-mail de réinitialisation a été envoyé.' })
+  } catch (err) { next(err) }
+})
+
+// POST /api/auth/reset-password
+router.post('/reset-password',
+  sensitiveLimiter,
+  body('token').notEmpty(),
+  body('password').isLength({ min: 6 }).withMessage('Mot de passe : 6 caractères minimum'),
+  async (req, res, next) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
+    try {
+      const user = await User.findOne({
+        passwordResetToken:   hashToken(req.body.token),
+        passwordResetExpires: { $gt: new Date() },
+      })
+      if (!user) return res.status(400).json({ error: 'Lien invalide ou expiré.' })
+      user.password             = req.body.password
+      user.passwordResetToken   = null
+      user.passwordResetExpires = null
+      await user.save()
+      res.json({ token: signToken(user._id), refreshToken: signRefreshToken(user._id), user: await sanitizeUser(user) })
+    } catch (err) { next(err) }
+  }
+)
+
 // POST /api/auth/login
 router.post('/login',
+  authLimiter,
   body('email').isEmail().normalizeEmail(),
   body('password').notEmpty(),
   async (req, res, next) => {
@@ -160,6 +272,7 @@ router.get('/me', requireAuth, async (req, res) => {
 const claimFlagPath = path.join(__dirname, '../../data/admin-claim.used')
 router.post('/claim-admin',
   requireAuth,
+  sensitiveLimiter,
   body('token').notEmpty().withMessage('Token requis'),
   async (req, res, next) => {
     const errors = validationResult(req)

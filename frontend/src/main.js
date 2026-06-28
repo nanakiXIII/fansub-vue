@@ -18,6 +18,9 @@ import PublicProfilePage from './views/PublicProfilePage.vue'
 import LoginPage          from './views/LoginPage.vue'
 import RegisterPage       from './views/RegisterPage.vue'
 import ClaimAdminPage     from './views/ClaimAdminPage.vue'
+import ForgotPasswordPage from './views/ForgotPasswordPage.vue'
+import ResetPasswordPage  from './views/ResetPasswordPage.vue'
+import VerifyEmailPage    from './views/VerifyEmailPage.vue'
 import AuthCallbackPage   from './views/AuthCallbackPage.vue'
 import RecruitPage     from './views/RecruitPage.vue'
 import ChatPage        from './views/ChatPage.vue'
@@ -37,6 +40,7 @@ import AdminAchievements from './views/admin/AdminAchievements.vue'
 import AdminAnalytics    from './views/admin/AdminAnalytics.vue'
 import AdminBeta         from './views/admin/AdminBeta.vue'
 import AdminAlerts       from './views/admin/AdminAlerts.vue'
+import AdminSiteSettings from './views/admin/AdminSiteSettings.vue'
 import AdminAudit        from './views/admin/AdminAudit.vue'
 import AdminApiTester    from './views/admin/AdminApiTester.vue'
 import { useSettings } from './composables/useSettings.js'
@@ -111,6 +115,9 @@ const router = createRouter({
     { path: '/connexion',          component: LoginPage,        meta: { title: 'Connexion'   } },
     { path: '/inscription',        component: RegisterPage,     meta: { title: 'Inscription' } },
     { path: '/devenir-admin',      component: ClaimAdminPage,   meta: { title: 'Devenir admin' } },
+    { path: '/mot-de-passe-oublie',        component: ForgotPasswordPage, meta: { title: 'Mot de passe oublié' } },
+    { path: '/reinitialiser-mot-de-passe', component: ResetPasswordPage,  meta: { title: 'Réinitialiser le mot de passe' } },
+    { path: '/verifier-email',             component: VerifyEmailPage,    meta: { title: "Vérification de l'e-mail" } },
     { path: '/auth/callback',      component: AuthCallbackPage, meta: { title: null          } },
     { path: '/watch/:id/:season/:ep', component: PlayerPage, meta: { title: null             } },
     {
@@ -134,6 +141,7 @@ const router = createRouter({
         { path: 'analytics',     component: AdminAnalytics,    meta: { title: 'Analytics — Admin'     } },
         { path: 'beta',          component: AdminBeta,         meta: { title: 'Bêta — Admin'          } },
         { path: 'alertes',       component: AdminAlerts,       meta: { title: 'Alertes — Admin'       } },
+        { path: 'parametres',    component: AdminSiteSettings, meta: { title: 'Paramètres du site — Admin' } },
         { path: 'audit',         component: AdminAudit,        meta: { title: "Logs d'audit — Admin"  } },
         { path: 'api-tester',    component: AdminApiTester,    meta: { title: 'API Tester — Admin'    } },
       ],

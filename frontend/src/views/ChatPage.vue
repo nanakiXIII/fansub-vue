@@ -1,5 +1,10 @@
 <template>
-  <div class="max-w-2xl mx-auto px-4 py-6 h-[calc(100vh-56px)] flex flex-col gap-4">
+  <div v-if="!chatEnabled" class="max-w-2xl mx-auto px-4 py-16 text-center">
+    <strong class="block text-[15px] font-extrabold text-white mb-1.5">Chat désactivé</strong>
+    <p class="text-[12px] text-ink-2">Le chat est temporairement désactivé par l'équipe.</p>
+  </div>
+
+  <div v-else class="max-w-2xl mx-auto px-4 py-6 h-[calc(100vh-56px)] flex flex-col gap-4">
 
     <!-- Header -->
     <div v-if="isGundam" class="cp-gh-header">
@@ -132,7 +137,9 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useChat } from '@/composables/useChat.js'
 import { useSettings } from '@/composables/useSettings.js'
 import { layout } from '@/composables/useTheme.js'
+import { useBeta } from '@/composables/useBeta.js'
 
+const { chatEnabled } = useBeta()
 const { messages, onlineCount, loadHistory, resetUnread, sendMessage: chatSend, socket } = useChat()
 const settings   = useSettings()
 const isLoggedIn = computed(() => !!settings.uid)
@@ -182,6 +189,7 @@ async function send() {
 }
 
 onMounted(async () => {
+  if (!chatEnabled.value) return
   resetUnread()
   await loadHistory()
   nextTick(scrollToBottom)

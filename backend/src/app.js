@@ -1,5 +1,6 @@
 const express      = require('express')
 const cors         = require('cors')
+const helmet       = require('helmet')
 const path         = require('path')
 const errorHandler = require('./middleware/errorHandler')
 
@@ -29,11 +30,19 @@ const chatRouter           = require('./routes/chat')
 const alertsRouter         = require('./routes/alerts')
 const auditRouter          = require('./routes/audit')
 const sitemapRouter        = require('./routes/sitemap')
+const rssRouter            = require('./routes/rss')
 const leaderboardRouter    = require('./routes/leaderboard')
 
 const { passport } = require('./passport')
 
 const app = express()
+
+// CSP désactivée : cette API ne sert pas de pages HTML à protéger, et une CSP par défaut
+// gênerait le chargement cross-origin des avatars/médias par le frontend (autre port/domaine).
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}))
 
 const _corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173'
 app.use(cors({ origin: _corsOrigin === '*' ? true : _corsOrigin, credentials: true }))
@@ -81,6 +90,7 @@ app.use('/api/audit',          auditRouter)
 app.use('/api/leaderboard',    leaderboardRouter)
 
 app.use('/sitemap.xml',        sitemapRouter)
+app.use('/rss.xml',            rssRouter)
 
 app.use(errorHandler)
 

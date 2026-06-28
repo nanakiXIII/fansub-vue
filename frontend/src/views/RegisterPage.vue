@@ -34,8 +34,16 @@
       <!-- ══ COLONNE DROITE : formulaire ══ -->
       <div class="flex-1 w-full min-w-0">
 
+      <!-- Inscriptions fermées -->
+      <div v-if="!registrationEnabled" class="bg-bg-1 border border-white/[0.08] rounded-2xl p-6 shadow-2xl text-center">
+        <strong class="block text-[14px] font-extrabold text-white mb-1.5">Inscriptions fermées</strong>
+        <p class="text-[12px] text-ink-2 leading-relaxed">
+          Les nouvelles inscriptions sont temporairement désactivées. Reviens un peu plus tard !
+        </p>
+      </div>
+
       <!-- Carte formulaire -->
-      <div class="bg-bg-1 border border-white/[0.08] rounded-2xl p-6 shadow-2xl">
+      <div v-else class="bg-bg-1 border border-white/[0.08] rounded-2xl p-6 shadow-2xl">
 
         <!-- OAuth : masqué si aucun provider configuré -->
         <template v-if="providers.google || providers.discord">
@@ -216,7 +224,9 @@ import AppCaptcha from '@/components/AppCaptcha.vue'
 import AppMascot from '@/components/AppMascot.vue'
 import { useAuth } from '@/composables/useAuth.js'
 import { useOAuthProviders, loadProviders } from '@/composables/useOAuthProviders.js'
+import { useBeta } from '@/composables/useBeta.js'
 
+const { registrationEnabled } = useBeta()
 const captchaRef = ref(null)
 const form = reactive({ username: '', email: '', password: '', confirm: '', cgu: false })
 const errors = reactive({ username: '', email: '', password: '', confirm: '', cgu: '' })

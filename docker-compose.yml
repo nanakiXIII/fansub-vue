@@ -25,9 +25,6 @@ services:
     env_file: ./backend/.env
     environment:
       - MONGODB_URI=mongodb://mongo:27017/fansub
-      - CORS_ORIGIN=http://localhost
-      - FRONTEND_URL=http://localhost
-      - OAUTH_CALLBACK_BASE=http://localhost
     depends_on:
       mongo:
         condition: service_healthy

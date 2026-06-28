@@ -136,14 +136,14 @@
         <!-- Colonne gauche -->
         <div class="gh-main">
 
-          <!-- Actualités -->
+          <!-- Actualités — liste ou grille bento selon newsDisplay -->
           <div v-if="news.length">
             <div class="gh-section-head">
               <div class="gh-section-mark"></div>
               <span class="section-title">Actualités</span>
               <RouterLink to="/actualites" class="gh-section-link">Voir tout →</RouterLink>
             </div>
-            <div class="flex flex-col gap-2">
+            <div v-if="newsDisplay === 'list'" class="flex flex-col gap-2">
               <RouterLink
                 v-for="item in news"
                 :key="item._id"
@@ -166,6 +166,31 @@
                   </div>
                   <div class="text-[12px] font-bold text-ink-1 truncate mb-0.5">{{ item.title }}</div>
                   <div class="text-[11px] text-ink-3 line-clamp-2 leading-relaxed">{{ item.excerpt }}</div>
+                </div>
+              </RouterLink>
+            </div>
+            <div v-else class="bento-grid">
+              <RouterLink
+                v-for="(item, i) in news"
+                :key="item._id"
+                :to="`/actualite/${item._id}`"
+                class="bento-card" :class="i === 0 ? 'bento-card-featured' : ''"
+              >
+                <div class="bento-card-img">
+                  <img loading="lazy" v-if="item.thumb || item.serie?.banner || item.serie?.poster" :src="item.thumb || item.serie?.banner || item.serie?.poster" class="absolute inset-0 w-full h-full object-cover" />
+                  <div v-if="!item.thumb && !item.serie?.banner && !item.serie?.poster" class="absolute inset-0" :style="{ background: item.gradient || item.serie?.gradient || 'rgba(var(--color-orange),0.2)' }"></div>
+                  <div v-if="i === 0 && item.icon" class="absolute inset-0 flex items-center justify-center pointer-events-none select-none" style="font-size:100px;opacity:0.07;filter:blur(2px)">{{ item.icon }}</div>
+                  <div class="bento-card-grad"></div>
+                  <div class="bento-card-scan"></div>
+                  <span class="badge absolute top-2 left-2" :class="getCategoryBadge(item.category)">{{ item.category }}</span>
+                </div>
+                <div class="bento-card-foot">
+                  <div class="bento-card-ttl">{{ item.title }}</div>
+                  <div v-if="i === 0" class="bento-card-excerpt">{{ item.excerpt || 'Découvrez les dernières nouvelles et mises à jour de la plateforme.' }}</div>
+                  <div class="bento-card-meta">
+                    <span class="bento-card-date">{{ formatNewsDate(item.createdAt) }}</span>
+                    <span v-if="i === 0" class="bento-card-read">Lire →</span>
+                  </div>
                 </div>
               </RouterLink>
             </div>
@@ -203,14 +228,14 @@
             </div>
           </div>
 
-          <!-- Dernières sorties — grille de posters -->
+          <!-- Dernières sorties — grille ou liste selon releasesDisplay -->
           <div>
             <div class="gh-section-head">
               <div class="gh-section-mark"></div>
               <span class="section-title">Dernières sorties</span>
               <RouterLink to="/sorties" class="gh-section-link">Voir tout →</RouterLink>
             </div>
-            <div class="grid grid-cols-3 lg:grid-cols-6 gap-3">
+            <div v-if="releasesDisplay === 'grid'" class="grid grid-cols-3 lg:grid-cols-6 gap-3">
               <RouterLink
                 v-for="item in latestReleases"
                 :key="`${item.serieId}-${item.seasonSlug}-${item.epNum}`"
@@ -242,6 +267,36 @@
                 <div class="p-2 flex flex-col gap-1">
                   <div class="text-[11px] font-bold text-ink-1 leading-tight line-clamp-2">{{ item.serie.title }}</div>
                   <div class="text-[9px] text-ink-3 font-mono truncate">{{ formatRelDate(item.releasedAt) }}</div>
+                </div>
+              </RouterLink>
+            </div>
+            <div v-else class="sidebar-card overflow-hidden">
+              <RouterLink
+                v-for="item in latestReleases"
+                :key="`${item.serieId}-${item.seasonSlug}-${item.epNum}`"
+                :to="`/serie/${item.serieId}?season=${item.seasonSlug}#episode-${item.epNum}`"
+                class="flex items-center gap-3 px-3 py-2.5 border-b border-white/[0.05] last:border-0 hover:bg-white/[0.03] transition-colors group"
+                :class="liveReleases.some(r => r.serieId === item.serieId && r.epNum === item.epNum) ? 'bg-emerald-500/5' : ''"
+              >
+                <div class="w-16 h-10 rounded shrink-0 overflow-hidden relative">
+                  <img loading="lazy" :src="item.serie.poster" :alt="item.serie.title" class="absolute inset-0 w-full h-full object-cover" />
+                  <div class="absolute inset-0" :style="{ background: item.serie.gradient, opacity: 0.45 }"></div>
+                  <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                    <svg class="w-3.5 h-3.5 fill-white" viewBox="0 0 16 16"><path d="M3 2l10 6-10 6V2z"/></svg>
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[12px] font-bold text-white truncate">{{ item.serie.title }}</div>
+                  <div class="text-[10px] text-ink-2 truncate">
+                    EP {{ item.epNum }}
+                    <span v-if="item.episode?.title && item.episode.title !== `Épisode ${item.epNum}`">
+                      — {{ item.episode.title }}
+                    </span>
+                  </div>
+                </div>
+                <div class="flex flex-col items-end gap-1 shrink-0">
+                  <span v-if="item.isNew" class="badge badge-new">NEW</span>
+                  <span class="text-[10px] text-ink-3">{{ formatRelDate(item.releasedAt) }}</span>
                 </div>
               </RouterLink>
             </div>
@@ -300,251 +355,7 @@
       </div>
     </template>
 
-    <!-- ═══════════════════════ FLUX 2026 LAYOUT ════════════════════ -->
-    <template v-else-if="layout === 'flux'">
-
-      <!-- HERO: carrousel plein largeur -->
-      <div v-if="carouselItems.length" class="fx-home-hero relative overflow-hidden">
-        <!-- Image de fond -->
-        <Transition name="hero-fade">
-          <img loading="eager" :key="featuredSerie.id" :src="featuredSerie.banner" :alt="featuredSerie.titleFull" class="absolute inset-0 w-full h-full object-cover" style="opacity:0.45" />
-        </Transition>
-        <!-- Overlay couleur de la série -->
-        <Transition name="hero-fade">
-          <div :key="'ov-'+featuredSerie.id" class="absolute inset-0" :style="{ background: featuredSerie.gradient, opacity: 0.3 }"></div>
-        </Transition>
-        <!-- Dégradé vers le bas -->
-        <div class="absolute inset-0" style="background:linear-gradient(to top,#07060f 0%,rgba(7,6,15,0.65) 35%,transparent 100%)"></div>
-        <!-- Grain -->
-        <div class="absolute inset-0 pointer-events-none" style="background-image:radial-gradient(circle,rgba(255,255,255,0.03) 1px,transparent 1px);background-size:18px 18px;"></div>
-
-        <!-- Contenu -->
-        <div class="relative z-10 w-full max-w-6xl mx-auto px-6 pb-10 pt-12 flex items-end gap-8">
-          <Transition name="hero-fade" mode="out-in">
-            <div :key="featuredSerie.id" class="flex flex-1 items-end justify-between gap-8">
-              <!-- Infos série (gauche) -->
-              <div class="flex-1 max-w-lg">
-                <div class="fx-eyebrow mb-4">
-                  <span class="fx-eyebrow-dot"></span>
-                  ◆ SIMULCAST EN COURS
-                </div>
-                <h1 class="fx-hero-title mb-2">{{ featuredSerie.titleFull }}</h1>
-                <p class="fx-hero-sub mb-4">{{ featuredSerie.titleJp }} — {{ featuredSerie.season }}</p>
-
-                <div class="flex items-center gap-3 flex-wrap mb-5">
-                  <span class="fx-score">⭐ {{ featuredSerie.score }}</span>
-                  <span class="fx-sep">·</span>
-                  <span class="fx-meta-text">{{ featuredSerie.year }} · {{ featuredSerie.studio }}</span>
-                  <span class="fx-sep">·</span>
-                  <div class="flex gap-1.5 flex-wrap">
-                    <span v-for="g in featuredSerie.genres.slice(0, 3)" :key="g" class="fx-genre-tag">{{ g }}</span>
-                  </div>
-                </div>
-
-                <div class="mb-6">
-                  <div class="flex items-center justify-between mb-2">
-                    <span class="fx-prog-label">EP {{ featuredItem.episode.num }} · {{ featuredItem.episode.lang?.toUpperCase() }}</span>
-                    <span class="fx-prog-pct">{{ featuredItem.translation.pct }}%</span>
-                  </div>
-                  <div class="fx-prog-track">
-                    <div class="fx-prog-fill" :style="{ width: featuredItem.translation.pct + '%' }"></div>
-                  </div>
-                  <div v-if="featuredItem.translation.eta" class="fx-prog-eta">
-                    Sortie estimée · <span>{{ featuredItem.translation.eta }}</span>
-                  </div>
-                </div>
-
-                <div class="flex gap-2 flex-wrap">
-                  <button @click="toggleFavorite(featuredSerie.id)" class="fx-cta-primary">
-                    <svg class="w-4 h-4" :class="isFavorite(featuredSerie.id) ? 'fill-white stroke-white' : 'fill-none stroke-current'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                    </svg>
-                    {{ isFavorite(featuredSerie.id) ? 'Dans ma liste' : 'Ajouter à ma liste' }}
-                  </button>
-                  <RouterLink :to="`/serie/${featuredSerie.id}`" class="fx-cta-ghost">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    Détails
-                  </RouterLink>
-                </div>
-              </div>
-
-              <!-- Panneau étapes (droite collée) -->
-              <div class="hidden md:block fx-steps-panel">
-                <div class="fx-steps-ep-label">Épisode {{ featuredItem.episode.num }}</div>
-                <div class="fx-steps-ep-title">{{ featuredItem.episode.title }}</div>
-                <div class="flex flex-col gap-2.5 mt-4">
-                  <div v-for="step in featuredItem.translation.steps" :key="step.label" class="flex items-center gap-2.5">
-                    <div class="fx-step-dot" :class="step.done ? 'fx-step-done' : step.current ? 'fx-step-active' : ''">
-                      <svg v-if="step.done" class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                      <span v-else-if="step.current" class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse block"></span>
-                    </div>
-                    <span class="fx-step-label" :class="step.done ? 'line-through opacity-35' : step.current ? '!text-white font-semibold' : ''">{{ step.label }}</span>
-                    <span v-if="step.current && featuredItem.staff?.translator" class="ml-auto text-[9px] opacity-30 truncate max-w-[70px]">{{ featuredItem.staff.translator }}</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </Transition>
-        </div>
-
-        <!-- Points carrousel -->
-        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5">
-          <button
-            v-for="(item, i) in carouselItems" :key="item.serieId"
-            class="relative h-1.5 rounded-full overflow-hidden transition-[width] duration-300"
-            :class="i === currentSlide ? 'w-10 fx-dot-active' : 'w-1.5 fx-dot'"
-            @click="goToSlide(i)"
-          >
-            <span v-if="i === currentSlide" :key="currentSlide" class="absolute inset-y-0 left-0 rounded-full fx-dot-fill hero-progress-fill" :style="{ animationDuration: SLIDE_DURATION + 'ms' }" @animationend="nextSlide"></span>
-          </button>
-        </div>
-      </div>
-
-      <!-- HOME LAYOUT -->
-      <div class="max-w-6xl mx-auto px-6 pb-16">
-
-        <!-- Actualités (bento) + Sidebar -->
-        <div class="fx-two-col pt-8 pb-6">
-
-          <!-- Actualités: style bento -->
-          <section>
-            <div class="fx-section-head">
-              <div class="fx-section-ttl">Actualités</div>
-              <RouterLink to="/actualites" class="fx-section-lnk">Voir tout →</RouterLink>
-            </div>
-            <div class="fx-bento2">
-              <RouterLink
-                v-for="(item, i) in news"
-                :key="item._id"
-                :to="`/actualite/${item._id}`"
-                class="fx-card2" :class="i === 0 ? 'fx-card2-featured' : ''"
-              >
-                <div class="fx-card2-img">
-                  <img loading="lazy" v-if="item.thumb || item.serie?.banner || item.serie?.poster" :src="item.thumb || item.serie?.banner || item.serie?.poster" class="absolute inset-0 w-full h-full object-cover" />
-                  <div v-if="!item.thumb && !item.serie?.banner && !item.serie?.poster" class="absolute inset-0" :style="{ background: item.gradient || item.serie?.gradient || 'rgba(168,85,247,0.2)' }"></div>
-                  <div v-if="i === 0 && item.icon" class="absolute inset-0 flex items-center justify-center pointer-events-none select-none" style="font-size:100px;opacity:0.07;filter:blur(2px)">{{ item.icon }}</div>
-                  <div class="fx-card2-grad"></div>
-                  <div class="fx-card2-scan"></div>
-                  <span class="badge absolute top-2 left-2" :class="getCategoryBadge(item.category)">{{ item.category }}</span>
-                </div>
-                <div class="fx-card2-foot">
-                  <div class="fx-card2-ttl">{{ item.title }}</div>
-                  <div v-if="i === 0" class="fx-card2-excerpt">{{ item.excerpt || 'Découvrez les dernières nouvelles et mises à jour de la plateforme.' }}</div>
-                  <div class="fx-card2-meta">
-                    <span class="fx-card2-date">{{ formatNewsDate(item.createdAt) }}</span>
-                    <span v-if="i === 0" class="fx-card2-read">Lire →</span>
-                  </div>
-                </div>
-              </RouterLink>
-            </div>
-          </section>
-
-          <!-- Sidebar -->
-          <aside class="flex flex-col gap-4">
-            <div v-if="stats.length" class="fx-panel2">
-              <div class="fx-panel2-title">Statistiques</div>
-              <div class="fx-stats-grid2">
-                <div v-for="stat in stats" :key="stat.label" class="fx-stat-box2">
-                  <div class="fx-stat-num2">{{ stat.value }}</div>
-                  <div class="fx-stat-lbl2">{{ stat.label }}</div>
-                </div>
-              </div>
-            </div>
-            <div class="fx-panel2 flex flex-col gap-3">
-              <div class="fx-panel2-title">Notre équipe</div>
-              <div v-if="teamMembers.length" class="flex items-center gap-3">
-                <div class="flex -space-x-2">
-                  <div v-for="m in teamMembers.slice(0, 6)" :key="m._id"
-                       class="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                       style="border: 2px solid rgba(255,255,255,0.06)"
-                       :style="{ background: m.avatarGradient || '#334155' }" :title="m.name">
-                    {{ m.initials || m.name?.[0]?.toUpperCase() }}
-                  </div>
-                </div>
-                <span class="text-[11px]" style="color:rgba(245,242,255,0.4)"><span style="color:rgba(245,242,255,0.9);font-weight:600">{{ teamMembers.length }}</span> membres</span>
-              </div>
-              <template v-if="openPositions.length">
-                <div class="h-px" style="background:rgba(255,255,255,0.06)"></div>
-                <div class="flex flex-col gap-1.5">
-                  <div v-for="pos in openPositions.slice(0, 3)" :key="pos._id" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07)">
-                    <span class="text-base leading-none shrink-0">{{ pos.icon || '🎯' }}</span>
-                    <span class="text-[11px] truncate" style="color:rgba(245,242,255,0.7)">{{ pos.title }}</span>
-                    <span class="ml-auto w-1.5 h-1.5 rounded-full bg-green-400 shrink-0 animate-pulse"></span>
-                  </div>
-                </div>
-                <RouterLink to="/recrutement" class="fx-btn fx-btn-primary-h w-full justify-center" style="font-size:11px;padding:6px 12px">Rejoindre l'équipe</RouterLink>
-              </template>
-              <template v-else>
-                <RouterLink to="/equipe" class="fx-btn fx-btn-glass-h w-full justify-center" style="font-size:11px;padding:6px 12px">Découvrir l'équipe</RouterLink>
-              </template>
-            </div>
-          </aside>
-        </div>
-
-        <!-- Continuer à regarder -->
-        <section v-if="continueWatching.length" class="pt-2 pb-6">
-          <div class="fx-section-head">
-            <div class="fx-section-ttl">Continuer à regarder</div>
-            <RouterLink to="/profil?tab=activity" class="fx-section-lnk">Voir tout →</RouterLink>
-          </div>
-          <div class="fx-releases-grid">
-            <RouterLink
-              v-for="item in continueWatching"
-              :key="`cw-${item.serieId}-${item.seasonSlug}-${item.epNum}`"
-              :to="item.url"
-              class="fx-poster-card"
-            >
-              <div class="fx-poster-thumb aspect-[2/3] relative overflow-hidden rounded-xl">
-                <img loading="lazy" :src="item.episode.thumbnail || item.serie.poster" :alt="item.serie.title" class="fx-poster-img absolute inset-0 w-full h-full object-cover" />
-                <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(7,6,15,0.95) 0%,transparent 55%)"></div>
-                <div class="absolute bottom-2 right-2 text-[10px] font-mono font-bold px-1.5 py-px rounded-md" style="background:rgba(168,85,247,0.25);color:#c084fc;border:1px solid rgba(192,132,252,0.3)">EP{{ String(item.epNum).padStart(2,'0') }}</div>
-                <div class="absolute bottom-0 left-0 right-0 h-1" style="background:rgba(0,0,0,0.5)">
-                  <div class="h-full" :style="{ background: 'linear-gradient(90deg,#a855f7,#22d3ee)', width: item.pct + '%' }"></div>
-                </div>
-              </div>
-              <div class="pt-2 px-0.5">
-                <div class="text-[11px] font-semibold leading-tight line-clamp-2 mb-1" style="color:rgba(245,242,255,0.8)">{{ item.serie.title }}</div>
-                <div class="text-[9px]" style="color:rgba(245,242,255,0.3)">{{ item.pct }}% visionné</div>
-              </div>
-            </RouterLink>
-          </div>
-        </section>
-
-        <!-- Séparateur -->
-        <div class="h-px my-2" style="background:linear-gradient(90deg,transparent,rgba(192,132,252,0.18),rgba(34,211,238,0.18),transparent)"></div>
-
-        <!-- Dernières sorties: poster grid (comme autres thèmes) -->
-        <section class="pt-6 pb-8">
-          <div class="fx-section-head">
-            <div class="fx-section-ttl">Dernières sorties</div>
-            <RouterLink to="/sorties" class="fx-section-lnk">Voir tout →</RouterLink>
-          </div>
-          <div class="fx-releases-grid">
-            <RouterLink
-              v-for="item in latestReleases"
-              :key="`${item.serieId}-${item.seasonSlug}-${item.epNum}`"
-              :to="`/serie/${item.serieId}?season=${item.seasonSlug}#episode-${item.epNum}`"
-              class="fx-poster-card"
-            >
-              <div class="fx-poster-thumb aspect-[2/3] relative overflow-hidden rounded-xl">
-                <img loading="lazy" :src="item.serie.poster" :alt="item.serie.title" class="fx-poster-img absolute inset-0 w-full h-full object-cover" />
-                <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(7,6,15,0.95) 0%,transparent 55%)"></div>
-                <span v-if="item.isNew" class="absolute top-2 left-2 badge badge-new">NEW</span>
-                <div class="absolute bottom-2 right-2 text-[10px] font-mono font-bold px-1.5 py-px rounded-md" style="background:rgba(168,85,247,0.25);color:#c084fc;border:1px solid rgba(192,132,252,0.3)">EP{{ String(item.epNum).padStart(2,'0') }}</div>
-              </div>
-              <div class="pt-2 px-0.5">
-                <div class="text-[11px] font-semibold leading-tight line-clamp-2 mb-1" style="color:rgba(245,242,255,0.8)">{{ item.serie.title }}</div>
-                <div class="text-[9px]" style="color:rgba(245,242,255,0.3)">{{ formatRelDate(item.releasedAt) }}</div>
-              </div>
-            </RouterLink>
-          </div>
-        </section>
-
-      </div>
-    </template>
-
-    <!-- ═══════════════════════ DEFAULT LAYOUT ═══════════════════════ -->
+    <!-- ═══════════════ PRÉSENTATION "NORMALE" (par défaut) ═══════════════ -->
     <template v-else>
 
       <!-- HERO SECTION : carrousel des simulcasts en cours -->
@@ -716,7 +527,7 @@
         <!-- Actualités + Stats -->
         <div class="pt-8 pb-6 grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6">
 
-          <!-- Actualités -->
+          <!-- Actualités — liste ou grille bento selon newsDisplay -->
           <div>
             <div class="flex items-center justify-between mb-4">
               <div class="section-title">Actualités</div>
@@ -725,7 +536,7 @@
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 12 12"><polyline points="4.5,1.5 9,6 4.5,10.5"/></svg>
               </RouterLink>
             </div>
-            <div class="flex flex-col gap-1.5">
+            <div v-if="newsDisplay === 'list'" class="flex flex-col gap-1.5">
               <RouterLink
                 v-for="item in news"
                 :key="item._id"
@@ -753,6 +564,31 @@
                   <img loading="lazy" v-if="item.thumb" :src="item.thumb" class="absolute inset-0 w-full h-full object-cover" />
                   <div class="absolute inset-0" :style="{ background: item.gradient || '#1a1a2a', opacity: item.thumb ? 0.45 : 1 }"></div>
                   <div v-if="!item.thumb" class="absolute inset-0 flex items-center justify-center text-2xl opacity-50">{{ item.icon }}</div>
+                </div>
+              </RouterLink>
+            </div>
+            <div v-else class="bento-grid">
+              <RouterLink
+                v-for="(item, i) in news"
+                :key="item._id"
+                :to="`/actualite/${item._id}`"
+                class="bento-card" :class="i === 0 ? 'bento-card-featured' : ''"
+              >
+                <div class="bento-card-img">
+                  <img loading="lazy" v-if="item.thumb" :src="item.thumb" class="absolute inset-0 w-full h-full object-cover" />
+                  <div v-if="!item.thumb" class="absolute inset-0" :style="{ background: item.gradient || 'rgba(var(--color-orange),0.2)' }"></div>
+                  <div v-if="i === 0 && item.icon" class="absolute inset-0 flex items-center justify-center pointer-events-none select-none" style="font-size:100px;opacity:0.07;filter:blur(2px)">{{ item.icon }}</div>
+                  <div class="bento-card-grad"></div>
+                  <div class="bento-card-scan"></div>
+                  <span class="badge absolute top-2 left-2" :class="getCategoryBadge(item.category)">{{ item.category }}</span>
+                </div>
+                <div class="bento-card-foot">
+                  <div class="bento-card-ttl">{{ item.title }}</div>
+                  <div v-if="i === 0" class="bento-card-excerpt">{{ item.excerpt || 'Découvrez les dernières nouvelles et mises à jour de la plateforme.' }}</div>
+                  <div class="bento-card-meta">
+                    <span class="bento-card-date">{{ formatNewsDate(item.createdAt) }}</span>
+                    <span v-if="i === 0" class="bento-card-read">Lire →</span>
+                  </div>
                 </div>
               </RouterLink>
             </div>
@@ -891,7 +727,26 @@
             </RouterLink>
           </div>
 
-          <div class="sidebar-card overflow-hidden">
+          <div v-if="releasesDisplay === 'grid'" class="bento-releases-grid">
+            <RouterLink
+              v-for="item in latestReleases"
+              :key="`${item.serieId}-${item.seasonSlug}-${item.epNum}`"
+              :to="`/serie/${item.serieId}?season=${item.seasonSlug}#episode-${item.epNum}`"
+              class="bento-poster-card"
+            >
+              <div class="bento-poster-thumb aspect-[2/3] relative overflow-hidden rounded-xl">
+                <img loading="lazy" :src="item.serie.poster" :alt="item.serie.title" class="bento-poster-img absolute inset-0 w-full h-full object-cover" />
+                <div class="absolute inset-0" style="background:linear-gradient(to top, rgb(var(--color-bg-0)) 0%,transparent 55%)"></div>
+                <span v-if="item.isNew" class="absolute top-2 left-2 badge badge-new">NEW</span>
+                <div class="absolute bottom-2 right-2 text-[10px] font-mono font-bold px-1.5 py-px rounded-md bento-ep-badge">EP{{ String(item.epNum).padStart(2,'0') }}</div>
+              </div>
+              <div class="pt-2 px-0.5">
+                <div class="text-[11px] font-semibold leading-tight line-clamp-2 mb-1 text-ink-1">{{ item.serie.title }}</div>
+                <div class="text-[9px] text-ink-3">{{ formatRelDate(item.releasedAt) }}</div>
+              </div>
+            </RouterLink>
+          </div>
+          <div v-else class="sidebar-card overflow-hidden">
             <RouterLink
               v-for="item in latestReleases"
               :key="`${item.serieId}-${item.seasonSlug}-${item.epNum}`"
@@ -942,6 +797,7 @@ import { useFavorites } from '@/composables/useFavorites.js'
 import { useSettings } from '@/composables/useSettings.js'
 import { useSocket } from '@/composables/useSocket.js'
 import { layout } from '@/composables/useTheme.js'
+import { newsDisplay, releasesDisplay } from '@/composables/usePresentation.js'
 import { http } from '@/services/http.js'
 import { useSeo } from '@/composables/useSeo.js'
 import { useContinueWatching } from '@/composables/useContinueWatching.js'
@@ -1382,225 +1238,70 @@ function bentoGlow(i) {
   100% { transform: translateY(200%); }
 }
 
-/* ── FLUX 2026 HOME ─────────────────────────────────────────────── */
+/* ── Grille bento (Actualités) et grille de posters (Dernières sorties) ──────────
+   Réutilisées comme alternative à l'affichage en liste, choisie indépendamment du
+   thème via le profil (newsDisplay / releasesDisplay, cf. usePresentation.js).
+   Couleurs adaptatives par défaut (rgb(var(--color-orange)) = accent du thème actif) ;
+   FLUX restaure son violet/cyan via [data-layout="flux"] .bento-* dans ce fichier. ── */
 
-/* Bandeau strip */
-.fx-label-strip {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
-  color: rgba(192,132,252,0.5);
-  padding: 8px 24px;
-  background: rgba(168,85,247,0.04);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-.fx-label-strip-line {
-  flex: 1; height: 1px;
-  background: linear-gradient(90deg, rgba(168,85,247,0.5), rgba(34,211,238,0.3), transparent);
+.bento-ep-badge {
+  background: rgba(var(--color-orange),0.22); color: rgb(var(--color-orange));
+  border: 1px solid rgba(var(--color-orange),0.35);
 }
 
-/* Hero carrousel */
-.fx-home-hero { min-height: 420px; display: flex; align-items: flex-end; }
+/* Grille bento (actualités) */
+.bento-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media (max-width: 900px) { .bento-grid { grid-template-columns: repeat(2, 1fr); } }
 
-.fx-eyebrow {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
-  color: #c084fc;
-}
-.fx-eyebrow-dot {
-  width: 6px; height: 6px; border-radius: 50%; background: #c084fc;
-  box-shadow: 0 0 8px rgba(192,132,252,0.9);
-  animation: fx-dot-pulse 2s ease-in-out infinite; flex-shrink: 0;
-}
-@keyframes fx-dot-pulse {
-  0%,100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: 0.5; transform: scale(0.75); }
-}
-
-.fx-hero-title {
-  font-size: clamp(22px, 3.5vw, 36px); font-weight: 900; line-height: 1.1;
-  background: linear-gradient(135deg, #f5f2ff 0%, #c084fc 30%, #22d3ee 60%, #f5f2ff 100%);
-  background-size: 300% 300%; background-clip: text; -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
-  animation: fx-grad-flow 6s ease infinite;
-}
-@keyframes fx-grad-flow {
-  0%,100% { background-position: 0% 50%; }
-  50%      { background-position: 100% 50%; }
-}
-.fx-hero-sub  { font-size: 13px; color: rgba(245,242,255,0.42); }
-.fx-score     { font-size: 15px; font-weight: 800; color: #c084fc; }
-.fx-sep       { color: rgba(255,255,255,0.15); }
-.fx-meta-text { font-size: 12px; color: rgba(245,242,255,0.42); }
-.fx-genre-tag {
-  font-size: 10px; padding: 2px 8px;
-  background: rgba(192,132,252,0.1); border: 1px solid rgba(192,132,252,0.22);
-  border-radius: 6px; color: #c084fc;
-}
-.fx-prog-label { font-size: 11px; font-weight: 600; color: rgba(245,242,255,0.5); }
-.fx-prog-pct   { font-size: 11px; font-weight: 800; color: #c084fc; }
-.fx-prog-track { width: 100%; height: 4px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; }
-.fx-prog-fill  { height: 100%; background: linear-gradient(90deg, #a855f7, #22d3ee); border-radius: 99px; box-shadow: 0 0 10px rgba(168,85,247,0.5); transition: width 0.7s; }
-.fx-prog-eta   { font-size: 10px; color: rgba(245,242,255,0.3); margin-top: 5px; }
-.fx-prog-eta span { color: rgba(245,242,255,0.55); font-weight: 500; }
-
-.fx-cta-primary {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: 13px; font-weight: 700; color: white;
-  background: linear-gradient(135deg, #a855f7, #0ea5e9);
-  border: none; border-radius: 12px; padding: 10px 20px;
-  cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 20px rgba(168,85,247,0.4);
-}
-.fx-cta-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(168,85,247,0.6); }
-.fx-cta-ghost {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: 13px; font-weight: 600; color: rgba(245,242,255,0.65);
-  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 12px; padding: 10px 20px; cursor: pointer; transition: all 0.2s;
-  text-decoration: none;
-}
-.fx-cta-ghost:hover { background: rgba(192,132,252,0.1); border-color: rgba(192,132,252,0.3); color: white; }
-
-.fx-steps-panel {
-  min-width: 220px; background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
-  padding: 16px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  flex-shrink: 0;
-}
-.fx-steps-ep-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #c084fc; }
-.fx-steps-ep-title { font-size: 12px; font-weight: 600; color: rgba(245,242,255,0.75); margin-top: 4px; line-height: 1.4; }
-.fx-step-dot {
-  width: 18px; height: 18px; border-radius: 50%;
-  background: rgba(255,255,255,0.07);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.fx-step-done   { background: linear-gradient(135deg, #a855f7, #22d3ee); }
-.fx-step-active { background: rgba(168,85,247,0.2); box-shadow: 0 0 0 2px rgba(168,85,247,0.4); }
-.fx-step-label  { font-size: 11px; color: rgba(245,242,255,0.45); }
-
-.fx-dot        { background: rgba(255,255,255,0.15); }
-.fx-dot-active { background: rgba(255,255,255,0.07); }
-.fx-dot-fill   { background: linear-gradient(90deg, #a855f7, #22d3ee); }
-
-/* Pills (bento NEW badge) */
-.fx-pill        { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 99px; letter-spacing: 0.05em; }
-.fx-pill-purple { background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); color: #c084fc; }
-.fx-pill-cyan   { background: rgba(34,211,238,0.12); border: 1px solid rgba(34,211,238,0.25); color: #22d3ee; }
-.fx-pill-rose   { background: rgba(251,113,133,0.12); border: 1px solid rgba(251,113,133,0.25); color: #fb7185; }
-.fx-pill-green  { background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.25); color: #34d399; }
-
-/* Buttons */
-.fx-btn { display: inline-flex; align-items: center; gap: 8px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; text-decoration: none; border: none; }
-.fx-btn-primary-h {
-  font-size: 13px; padding: 10px 20px; color: white;
-  background: linear-gradient(135deg, #a855f7, #0ea5e9);
-  box-shadow: 0 4px 20px rgba(168,85,247,0.4);
-}
-.fx-btn-primary-h:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(168,85,247,0.6); color: white; }
-.fx-btn-glass-h {
-  font-size: 13px; padding: 10px 20px; color: rgba(245,242,255,0.65);
-  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
-}
-.fx-btn-glass-h:hover { background: rgba(192,132,252,0.1); border-color: rgba(192,132,252,0.3); color: white; }
-
-/* Section headers */
-.fx-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.fx-section-ttl {
-  font-size: 15px; font-weight: 800; color: rgba(245,242,255,0.9);
-  display: flex; align-items: center; gap: 8px;
-}
-.fx-section-ttl::before {
-  content: ''; display: inline-block; width: 3px; height: 16px; flex-shrink: 0;
-  background: linear-gradient(180deg, #c084fc, #22d3ee); border-radius: 3px;
-}
-.fx-section-lnk { font-size: 12px; color: rgba(192,132,252,0.6); font-weight: 500; transition: color 0.2s; text-decoration: none; }
-.fx-section-lnk:hover { color: #c084fc; }
-
-/* Bento grid */
-.fx-bento2 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-@media (max-width: 900px) { .fx-bento2 { grid-template-columns: repeat(2, 1fr); } }
-
-.fx-card2 {
+.bento-card {
   display: block; cursor: pointer; border-radius: 16px; overflow: hidden;
   background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
   transition: all 0.25s; text-decoration: none;
 }
-.fx-card2:hover { border-color: rgba(192,132,252,0.25); transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.4), 0 0 20px rgba(168,85,247,0.12); }
-.fx-card2-featured { grid-column: span 2; grid-row: span 2; position: relative; }
-.fx-card2-img { position: relative; aspect-ratio: 2/3; overflow: hidden; }
-.fx-card2-featured .fx-card2-img { position: absolute; inset: 0; aspect-ratio: unset; width: 100%; height: 100%; }
-.fx-card2-grad { position: absolute; inset: 0; background: linear-gradient(to top, rgba(7,6,15,0.9) 0%, transparent 50%); }
-.fx-card2-featured .fx-card2-grad { background: linear-gradient(to top, rgba(7,6,15,0.97) 0%, rgba(7,6,15,0.4) 45%, transparent 100%); }
-.fx-card2-featured .fx-card2-foot { position: absolute; bottom: 0; left: 0; right: 0; z-index: 2; padding: 24px 20px 20px; }
-.fx-card2-featured .fx-card2-ttl { font-size: 15px; -webkit-line-clamp: 3; }
-.fx-card2-scan {
+.bento-card:hover { border-color: rgba(var(--color-orange),0.3); transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.4), 0 0 20px rgba(var(--color-orange),0.12); }
+.bento-card-featured { grid-column: span 2; grid-row: span 2; position: relative; }
+.bento-card-img { position: relative; aspect-ratio: 2/3; overflow: hidden; }
+.bento-card-featured .bento-card-img { position: absolute; inset: 0; aspect-ratio: unset; width: 100%; height: 100%; }
+.bento-card-grad { position: absolute; inset: 0; background: linear-gradient(to top, rgb(var(--color-bg-0)) 0%, transparent 50%); }
+.bento-card-featured .bento-card-grad { background: linear-gradient(to top, rgb(var(--color-bg-0)) 0%, rgba(var(--color-bg-0),0.4) 45%, transparent 100%); }
+.bento-card-featured .bento-card-foot { position: absolute; bottom: 0; left: 0; right: 0; z-index: 2; padding: 24px 20px 20px; }
+.bento-card-featured .bento-card-ttl { font-size: 15px; -webkit-line-clamp: 3; }
+.bento-card-scan {
   position: absolute; left: 0; right: 0; height: 1px; top: 0; opacity: 0;
-  background: linear-gradient(90deg, transparent, rgba(192,132,252,0.6), transparent);
-  pointer-events: none; animation: fx-scan-card 3s linear infinite;
+  background: linear-gradient(90deg, transparent, rgba(var(--color-orange),0.6), transparent);
+  pointer-events: none; animation: bento-scan-card 3s linear infinite;
 }
-.fx-card2:hover .fx-card2-scan { opacity: 1; }
-@keyframes fx-scan-card { 0% { top: 0%; } 100% { top: 100%; } }
-.fx-card2-ep {
-  font-size: 10px; font-family: monospace; font-weight: 700;
-  padding: 2px 6px; border-radius: 6px;
-  background: rgba(168,85,247,0.25); color: #c084fc; border: 1px solid rgba(192,132,252,0.3);
-}
-.fx-card2-foot { padding: 10px 12px; }
-.fx-card2-ttl  { font-size: 12px; font-weight: 600; color: rgba(245,242,255,0.8); line-height: 1.3; margin-bottom: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.fx-card2-excerpt { font-size: 11px; color: rgba(245,242,255,0.45); line-height: 1.5; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.fx-card2-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.fx-card2-date { font-size: 10px; color: rgba(245,242,255,0.28); }
-.fx-card2-read { font-size: 10px; font-weight: 600; color: #c084fc; letter-spacing: 0.03em; }
+.bento-card:hover .bento-card-scan { opacity: 1; }
+@keyframes bento-scan-card { 0% { top: 0%; } 100% { top: 100%; } }
+.bento-card-foot { padding: 10px 12px; }
+.bento-card-ttl  { font-size: 12px; font-weight: 600; color: rgb(var(--color-ink-1)); line-height: 1.3; margin-bottom: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bento-card-excerpt { font-size: 11px; color: rgb(var(--color-ink-3)); line-height: 1.5; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.bento-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bento-card-date { font-size: 10px; color: rgb(var(--color-ink-3)); }
+.bento-card-read { font-size: 10px; font-weight: 600; color: rgb(var(--color-orange)); letter-spacing: 0.03em; }
 
-/* Two-column layout */
-.fx-two-col { display: grid; grid-template-columns: 1fr 280px; gap: 24px; }
-@media (max-width: 900px) { .fx-two-col { grid-template-columns: 1fr; } }
-
-/* News rows */
-.fx-news-row2 {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px; border-radius: 12px;
-  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
-  transition: all 0.2s; cursor: pointer; text-decoration: none;
-}
-.fx-news-row2:hover { background: rgba(255,255,255,0.055); border-color: rgba(192,132,252,0.18); transform: translateX(3px); }
-.fx-news-thumb { width: 48px; height: 36px; border-radius: 8px; flex-shrink: 0; overflow: hidden; position: relative; background: rgba(168,85,247,0.15); }
-.fx-news-meta  { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-.fx-news-date  { font-size: 10px; color: rgba(245,242,255,0.28); }
-.fx-news-ttl   { font-size: 12px; font-weight: 600; color: rgba(245,242,255,0.8); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-/* Sidebar panels */
-.fx-panel2 {
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px; padding: 16px;
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-}
-.fx-panel2-title {
-  font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-  color: rgba(245,242,255,0.4); margin-bottom: 12px;
-  display: flex; align-items: center; gap: 6px;
-}
-.fx-panel2-title::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: linear-gradient(135deg, #c084fc, #22d3ee); }
-.fx-stats-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.fx-stat-box2 {
-  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 12px; padding: 12px; text-align: center;
-}
-.fx-stat-num2 { font-size: 22px; font-weight: 900; color: #c084fc; line-height: 1; margin-bottom: 4px; }
-.fx-stat-lbl2 { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(245,242,255,0.28); }
-
-/* Releases grid (poster portrait) */
-.fx-releases-grid {
+/* Grille de posters (dernières sorties) */
+.bento-releases-grid {
   display: grid; gap: 12px;
   grid-template-columns: repeat(3, 1fr);
 }
-@media (min-width: 480px)  { .fx-releases-grid { grid-template-columns: repeat(4, 1fr); } }
-@media (min-width: 1024px) { .fx-releases-grid { grid-template-columns: repeat(6, 1fr); } }
+@media (min-width: 480px)  { .bento-releases-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1024px) { .bento-releases-grid { grid-template-columns: repeat(6, 1fr); } }
 
-.fx-poster-card { display: block; cursor: pointer; text-decoration: none; }
-.fx-poster-thumb { transition: box-shadow 0.3s; }
-.fx-poster-img   { opacity: 0.82; transition: transform 0.4s ease, opacity 0.3s; }
-.fx-poster-card:hover .fx-poster-img  { transform: scale(1.06); opacity: 1; }
-.fx-poster-card:hover .fx-poster-thumb {
+.bento-poster-card { display: block; cursor: pointer; text-decoration: none; }
+.bento-poster-thumb { transition: box-shadow 0.3s; }
+.bento-poster-img   { opacity: 0.82; transition: transform 0.4s ease, opacity 0.3s; }
+.bento-poster-card:hover .bento-poster-img  { transform: scale(1.06); opacity: 1; }
+.bento-poster-card:hover .bento-poster-thumb {
+  box-shadow: 0 0 0 1px rgba(var(--color-orange),0.35), 0 16px 32px rgba(0,0,0,0.6), 0 0 28px rgba(var(--color-orange),0.22);
+}
+
+/* ── FLUX 2026 : restaure son violet/cyan sur ces deux grilles ── */
+[data-layout="flux"] .bento-card-read { color: #c084fc; }
+[data-layout="flux"] .bento-card:hover { border-color: rgba(192,132,252,0.25); box-shadow: 0 12px 30px rgba(0,0,0,0.4), 0 0 20px rgba(168,85,247,0.12); }
+[data-layout="flux"] .bento-card-scan { background: linear-gradient(90deg, transparent, rgba(192,132,252,0.6), transparent); }
+[data-layout="flux"] .bento-ep-badge { background: rgba(168,85,247,0.25); color: #c084fc; border-color: rgba(192,132,252,0.3); }
+[data-layout="flux"] .bento-poster-card:hover .bento-poster-thumb {
   box-shadow: 0 0 0 1px rgba(192,132,252,0.35), 0 16px 32px rgba(0,0,0,0.6), 0 0 28px rgba(168,85,247,0.22);
 }
 </style>

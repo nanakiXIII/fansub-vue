@@ -29,6 +29,7 @@
 
       <!-- Bouton Chat (desktop) -->
       <RouterLink
+        v-if="chatEnabled"
         to="/chat"
         class="hidden lg:flex relative w-9 h-9 items-center justify-center rounded-lg text-ink-2 hover:text-white hover:bg-bg-2 transition-colors shrink-0"
         active-class="!text-white !bg-bg-2"
@@ -177,6 +178,7 @@
 
       <!-- Bouton Chat (mobile) -->
       <RouterLink
+        v-if="chatEnabled"
         to="/chat"
         class="lg:hidden relative w-9 h-9 flex items-center justify-center rounded-lg text-ink-2 hover:text-white hover:bg-bg-2 transition-colors shrink-0"
         aria-label="Chat"
@@ -308,7 +310,7 @@ import { useNavbar } from '@/composables/useNavbar.js'
 import NotificationBell from '@/components/NotificationBell.vue'
 
 const {
-  settings, chatUnread, mobileMenuOpen, profileOpen, profileRef,
+  settings, chatUnread, chatEnabled, mobileMenuOpen, profileOpen, profileRef,
   defaultAvatar, navInitials, isImageUrl, navLinks, handleLogout,
 } = useNavbar('linear-gradient(135deg,#f97316,#fb923c)')
 </script>

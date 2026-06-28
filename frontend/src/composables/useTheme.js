@@ -18,10 +18,14 @@ const stored = getCookie('theme')
 
 export const theme = ref(themes.some(t => t.id === stored) ? stored : themes[0].id)
 
+// Applique l'attribut tout de suite (rendu), mais n'écrit le cookie que sur un vrai
+// changement de valeur — sinon un visiteur sans préférence se verrait assigner un cookie
+// dès le chargement du module, avant même que le défaut admin (settings.js) ait pu s'appliquer.
+document.documentElement.setAttribute('data-theme', theme.value)
 watch(theme, (value) => {
   document.documentElement.setAttribute('data-theme', value)
   setCookie('theme', value)
-}, { immediate: true })
+})
 
 export const layouts = [
   { id: 'default', label: 'Classique',     icon: '▣' },
@@ -33,8 +37,9 @@ export const layouts = [
 const storedLayout = getCookie('layout')
 export const layout = ref(layouts.some(l => l.id === storedLayout) ? storedLayout : 'default')
 
+document.documentElement.setAttribute('data-layout', layout.value)
 watch(layout, (value) => {
   document.documentElement.setAttribute('data-layout', value)
   document.documentElement.style.removeProperty('background-color')
   setCookie('layout', value)
-}, { immediate: true })
+})

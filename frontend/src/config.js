@@ -14,7 +14,7 @@ export const config = {
   siteDescription : import.meta.env.VITE_SITE_DESCRIPTION ?? '',
 
   // API
-  apiBaseUrl  : import.meta.env.VITE_API_BASE_URL  ?? 'http://localhost:8000/api',
+  apiBaseUrl  : import.meta.env.VITE_API_BASE_URL  ?? '/api',
 
   // Réseaux sociaux
   discordUrl  : import.meta.env.VITE_DISCORD_URL   ?? '#',

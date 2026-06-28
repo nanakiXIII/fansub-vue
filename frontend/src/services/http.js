@@ -1,6 +1,6 @@
 import { useToast } from '@/composables/useToast.js'
 
-const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+const BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 
 const TOAST_SKIP = new Set([400, 401, 403, 404, 409, 422])
 

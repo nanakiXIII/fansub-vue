@@ -324,6 +324,10 @@ const permissionGroups = [
     perms: [{ key: 'alerts.manage', label: 'Gérer' }],
   },
   {
+    label: 'Paramètres du site',
+    perms: [{ key: 'settings.manage', label: 'Gérer' }],
+  },
+  {
     label: 'Audit',
     perms: [{ key: 'audit.view', label: "Voir les logs d'audit" }],
   },

@@ -19,6 +19,14 @@ const userSchema = new mongoose.Schema({
   googleId:  { type: String, unique: true, sparse: true },
   discordId: { type: String, unique: true, sparse: true },
   isAdmin:   { type: Boolean, default: false },
+  // default true : ne pas casser les comptes existants ni les comptes OAuth (email déjà
+  // vérifié par Google/Discord) lors de l'ajout de ce champ. Mis explicitement à false
+  // à la création d'un compte classique email/mot de passe (cf. routes/auth.js /register).
+  emailVerified:        { type: Boolean, default: true  },
+  emailVerifyToken:     { type: String,  default: null  },
+  emailVerifyExpires:   { type: Date,    default: null  },
+  passwordResetToken:   { type: String,  default: null  },
+  passwordResetExpires: { type: Date,    default: null  },
   avatar:        { type: String, default: null },
   role:          { type: String, default: null },
   activeTitleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Achievement', default: null },

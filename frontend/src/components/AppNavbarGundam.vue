@@ -46,6 +46,7 @@
 
       <!-- Chat desktop -->
       <RouterLink
+        v-if="chatEnabled"
         to="/chat"
         class="hidden lg:flex gundam-icon-btn relative shrink-0"
         active-class="gundam-icon-btn--on"
@@ -144,7 +145,7 @@
 
       <!-- Mobile uniquement (chat + notifs + burger) -->
       <div class="gundam-mobile-icons">
-        <RouterLink to="/chat" class="gundam-icon-btn relative shrink-0" aria-label="Chat" @click="mobileMenuOpen = false">
+        <RouterLink v-if="chatEnabled" to="/chat" class="gundam-icon-btn relative shrink-0" aria-label="Chat" @click="mobileMenuOpen = false">
           <svg class="w-[15px] h-[15px]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           <span v-if="chatUnread > 0" class="absolute -top-1 -right-1 min-w-[14px] h-3.5 bg-red-500 text-white text-[8px] font-bold flex items-center justify-center px-1 leading-none">{{ chatUnread > 9 ? '9+' : chatUnread }}</span>
         </RouterLink>
@@ -210,7 +211,7 @@ import { useNavbar } from '@/composables/useNavbar.js'
 import NotificationBell from '@/components/NotificationBell.vue'
 
 const {
-  settings, chatUnread, mobileMenuOpen, profileOpen, profileRef,
+  settings, chatUnread, chatEnabled, mobileMenuOpen, profileOpen, profileRef,
   defaultAvatar, navInitials, isImageUrl, navLinks, handleLogout,
 } = useNavbar('linear-gradient(135deg,#f97316,#fb923c)')
 

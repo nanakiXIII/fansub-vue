@@ -19,6 +19,7 @@ const settings = reactive({
   roleColor:     null,
   activeTitle:   null,
   permissions:   [],
+  emailVerified: true,
   ...load(),
 })
 

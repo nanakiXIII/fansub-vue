@@ -179,23 +179,31 @@
 import { ref, computed, onMounted } from 'vue'
 import { http } from '@/services/http.js'
 import { layout } from '@/composables/useTheme.js'
+import { useBeta } from '@/composables/useBeta.js'
 
-const team    = ref([])
-const loading = ref(true)
+const { foundedYear } = useBeta()
+const team       = ref([])
+const homeStats  = ref({ episodes: 0, seasons: 0 })
+const loading    = ref(true)
 
 onMounted(async () => {
   try {
-    team.value = await http.get('/team')
+    const [teamRes, homeRes] = await Promise.all([
+      http.get('/team'),
+      http.get('/home'),
+    ])
+    team.value      = teamRes
+    homeStats.value = homeRes.stats
   } finally {
     loading.value = false
   }
 })
 
 const stats = computed(() => [
-  { value: loading.value ? '…' : team.value.length, label: 'Membres actifs'       },
-  { value: '6',                                      label: 'Saisons traduites'    },
-  { value: '300+',                                   label: 'Épisodes sous-titrés' },
-  { value: '2019',                                   label: 'Création du fansub'   },
+  { value: loading.value ? '…' : team.value.length,                          label: 'Membres actifs'       },
+  { value: loading.value ? '…' : homeStats.value.seasons,                    label: 'Saisons traduites'    },
+  { value: loading.value ? '…' : homeStats.value.episodes.toLocaleString('fr-FR'), label: 'Épisodes sous-titrés' },
+  { value: foundedYear.value,                                                label: 'Création du fansub'   },
 ])
 
 const departments = computed(() => [

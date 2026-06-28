@@ -86,16 +86,40 @@
       <!-- Panneau latéral : état du site -->
       <div class="flex flex-col gap-3">
 
-        <!-- État bêta -->
+        <!-- État du site -->
         <div class="bg-bg-1 border border-white/[0.06] rounded-xl p-4">
-          <div class="text-[11px] font-bold text-ink-2 uppercase tracking-wide mb-3">État du site</div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-[11px] font-bold text-ink-2 uppercase tracking-wide">État du site</div>
+            <RouterLink to="/admin/parametres" class="text-[10px] font-semibold text-orange hover:text-orange-hover transition-colors">Gérer →</RouterLink>
+          </div>
           <div class="flex flex-col gap-2.5">
+            <div class="flex items-center justify-between text-[12px]">
+              <span class="text-ink-2">Mode maintenance</span>
+              <span
+                class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                :class="maintenanceStatus ? 'bg-red-500/20 text-red-400' : 'bg-bg-3 text-ink-3'"
+              >{{ maintenanceStatus ? 'Actif' : 'Inactif' }}</span>
+            </div>
             <div class="flex items-center justify-between text-[12px]">
               <span class="text-ink-2">Mode bêta</span>
               <span
                 class="text-[10px] font-bold px-2 py-0.5 rounded-full"
                 :class="betaStatus ? 'bg-orange/20 text-orange' : 'bg-bg-3 text-ink-3'"
               >{{ betaStatus ? 'Actif' : 'Inactif' }}</span>
+            </div>
+            <div class="flex items-center justify-between text-[12px]">
+              <span class="text-ink-2">Inscriptions</span>
+              <span
+                class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                :class="registrationStatus ? 'bg-emerald-500/20 text-emerald-400' : 'bg-bg-3 text-ink-3'"
+              >{{ registrationStatus ? 'Ouvertes' : 'Fermées' }}</span>
+            </div>
+            <div class="flex items-center justify-between text-[12px]">
+              <span class="text-ink-2">Chat</span>
+              <span
+                class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                :class="chatStatus ? 'bg-emerald-500/20 text-emerald-400' : 'bg-bg-3 text-ink-3'"
+              >{{ chatStatus ? 'Activé' : 'Désactivé' }}</span>
             </div>
             <div class="flex items-center justify-between text-[12px]">
               <span class="text-ink-2">Bugs ouverts</span>
@@ -118,9 +142,9 @@
           </div>
         </div>
 
-        <!-- Liens admin système -->
+        <!-- Liens système & suivi -->
         <div class="bg-bg-1 border border-white/[0.06] rounded-xl p-4">
-          <div class="text-[11px] font-bold text-ink-2 uppercase tracking-wide mb-3">Administration</div>
+          <div class="text-[11px] font-bold text-ink-2 uppercase tracking-wide mb-3">Système &amp; suivi</div>
           <div class="flex flex-col gap-1">
             <RouterLink
               v-for="link in systemLinks"
@@ -147,7 +171,12 @@ import { useSettings } from '@/composables/useSettings.js'
 import { useBeta } from '@/composables/useBeta.js'
 
 const settings = useSettings()
-const { betaEnabled: betaStatus } = useBeta()
+const {
+  betaEnabled: betaStatus,
+  maintenanceEnabled: maintenanceStatus,
+  registrationEnabled: registrationStatus,
+  chatEnabled: chatStatus,
+} = useBeta()
 
 const loading = ref(true)
 const counts  = ref({
@@ -202,6 +231,10 @@ const ico = {
   clock:    '<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
   analytics:'<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h3m14 0h3M12 2v3m0 14v3"/></svg>',
   recruit:  '<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>',
+  settings: '<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  alert:    '<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+  audit:    '<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+  api:      '<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
 }
 
 const stats = [
@@ -225,6 +258,7 @@ const quickLinks = [
   { to: '/admin/series',       label: 'Séries',        desc: 'Gérer le catalogue',    color: 'bg-blue-500/15 text-blue-400',     icon: ico.series   },
   { to: '/admin/news',         label: 'Actualités',    desc: 'Rédiger un article',    color: 'bg-emerald-500/15 text-emerald-400', icon: ico.news   },
   { to: '/admin/avancement',   label: 'Avancement',    desc: 'Traductions en cours',  color: 'bg-indigo-500/15 text-indigo-400', icon: ico.clock    },
+  { to: '/admin/succes',       label: 'Succès',        desc: 'Récompenses & titres',  color: 'bg-amber-500/15 text-amber-400',   icon: ico.star     },
   { to: '/admin/commentaires', label: 'Commentaires',  desc: 'Modérer',               color: 'bg-orange/15 text-orange',         icon: ico.comments },
   { to: '/admin/utilisateurs', label: 'Utilisateurs',  desc: 'Comptes & permissions', color: 'bg-purple-500/15 text-purple-400', icon: ico.users    },
   { to: '/admin/equipe',       label: 'Équipe',        desc: 'Gérer le staff',        color: 'bg-yellow-500/15 text-yellow-400', icon: ico.team     },
@@ -234,9 +268,12 @@ const quickLinks = [
 ]
 
 const systemLinks = [
-  { to: '/admin/grades',        label: 'Grades & rôles',  icon: ico.badge    },
-  { to: '/admin/succes',        label: 'Succès',          icon: ico.star     },
-  { to: '/admin/analytics',     label: 'Analytics',       icon: ico.analytics},
-  { to: '/admin/statistiques',  label: 'Statistiques',    icon: ico.chart    },
+  { to: '/admin/grades',       label: 'Grades & rôles',     icon: ico.badge     },
+  { to: '/admin/parametres',   label: 'Paramètres du site', icon: ico.settings  },
+  { to: '/admin/alertes',      label: 'Alertes',            icon: ico.alert     },
+  { to: '/admin/analytics',    label: 'Analytics',          icon: ico.analytics },
+  { to: '/admin/statistiques', label: 'Statistiques',       icon: ico.chart     },
+  { to: '/admin/audit',        label: "Logs d'audit",       icon: ico.audit     },
+  { to: '/admin/api-tester',   label: 'API Tester',         icon: ico.api       },
 ]
 </script>
