@@ -1,8 +1,22 @@
 services:
 
+  # ── SFTP (accès fichiers uploads) ────────────────────────────────────────────
+  sftp:
+    image: atmoz/sftp:latest
+    container_name: fansub_sftp
+    restart: unless-stopped
+    ports:
+      - "2112:22"
+    volumes:
+      - backend_uploads:/home/${SFTP_USER:-chuushin}/uploads
+    environment:
+      SFTP_USERS: "${SFTP_USER:-chuushin}:${SFTP_PASSWORD}:1001"
+    networks:
+      - fansub_net
+
   # ── Base de données ──────────────────────────────────────────────────────────
   mongo:
-    image: mongo:7-jammy
+    image: mongodb/mongodb-community-server:4.4-ubuntu2204-slim
     container_name: fansub_mongo
     restart: unless-stopped
     volumes:
