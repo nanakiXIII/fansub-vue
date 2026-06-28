@@ -185,18 +185,6 @@
               </template>
             </div>
 
-            <!-- TAB: CHARACTERS -->
-            <div v-if="activeTab === 'characters'">
-              <div v-if="serie.characters.length" class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(110px, 1fr))">
-                <div v-for="c in serie.characters" :key="c.name" class="border border-orange/10 overflow-hidden text-center bg-orange/[0.02]">
-                  <div class="aspect-square flex items-center justify-center text-3xl" :style="{ background: `linear-gradient(135deg, ${c.bg}, rgb(var(--color-bg-0)))` }">{{ c.emoji }}</div>
-                  <div class="text-[11px] font-semibold text-ink-1 px-1 pt-1.5 pb-0.5">{{ c.name }}</div>
-                  <div class="text-[10px] text-ink-3 pb-2 font-mono">{{ c.role }}</div>
-                </div>
-              </div>
-              <div v-else class="text-[12px] text-ink-3 py-8 text-center font-mono">// AUCUN PERSONNAGE RENSEIGNÉ</div>
-            </div>
-
             <!-- TAB: COMMENTS -->
             <div v-show="activeTab === 'comments'">
               <CommentSection :serie-id="serie.id" placeholder="Partage ton avis sur cette série…" @update:count="commentCount = $event" />
@@ -384,17 +372,6 @@
                 :progress-map="progressMap"
               />
             </template>
-          </div>
-
-          <div v-if="activeTab === 'characters'">
-            <div v-if="serie.characters.length" class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(110px, 1fr))">
-              <div v-for="c in serie.characters" :key="c.name" class="bg-bg-1 border border-white/[0.06] rounded-lg overflow-hidden text-center">
-                <div class="aspect-square flex items-center justify-center text-3xl" :style="{ background: `linear-gradient(135deg, ${c.bg}, rgb(var(--color-bg-0)))` }">{{ c.emoji }}</div>
-                <div class="text-[11px] font-semibold text-ink-1 px-1 pt-1.5 pb-0.5">{{ c.name }}</div>
-                <div class="text-[10px] text-ink-3 pb-2">{{ c.role }}</div>
-              </div>
-            </div>
-            <div v-else class="text-[13px] text-ink-3 py-8 text-center">Aucun personnage renseigné.</div>
           </div>
 
           <div v-show="activeTab === 'comments'">
@@ -658,7 +635,6 @@ const commentCount = ref(null)
 
 const tabs = computed(() => [
   { key: 'episodes',   label: 'Épisodes'      },
-  { key: 'characters', label: 'Personnages'   },
   { key: 'comments',   label: commentCount.value !== null ? `Commentaires (${commentCount.value})` : 'Commentaires' },
 ])
 </script>
