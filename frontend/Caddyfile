@@ -1,5 +1,4 @@
 {$SITE_DOMAIN:http://localhost} {
-    root * /srv
     encode gzip zstd
 
     handle /api/* {
@@ -18,6 +17,12 @@
         reverse_proxy backend:3000
     }
 
-    file_server
-    try_files {path} /index.html
+    # Tout le reste (SPA) — dans son propre handle pour forcer cet ordre
+    # après les blocs ci-dessus (file_server/try_files hors handle peuvent
+    # s'exécuter avant eux, peu importe l'ordre d'écriture dans ce fichier).
+    handle {
+        root * /srv
+        try_files {path} /index.html
+        file_server
+    }
 }
