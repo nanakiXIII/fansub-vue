@@ -90,6 +90,11 @@ router.patch('/', requireAuth, async (req, res, next) => {
     if ('seasonalEffect' in req.body && !VALID_SEASONAL_EFFECTS.includes(req.body.seasonalEffect)) {
       return res.status(400).json({ error: 'Effet saisonnier invalide' })
     }
+    for (const key of URL_LINK_KEYS) {
+      if (key in req.body && !isValidLinkValue(req.body[key])) {
+        return res.status(400).json({ error: `Lien invalide pour ${key} (doit commencer par http:// ou https://)` })
+      }
+    }
     // Le thème/template par défaut du site doit toujours faire partie des options activées,
     // sinon les nouveaux visiteurs se retrouveraient sur une valeur qu'on vient de désactiver.
     const current = await SiteSettings.get()

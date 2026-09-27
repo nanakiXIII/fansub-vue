@@ -4,7 +4,7 @@
 // Doc : GET https://discord.com/api/v10/invites/{code}?with_counts=true
 
 import { ref } from 'vue'
-import { config } from '@/config.js'
+import { useBeta } from '@/composables/useBeta.js'
 
 const loading = ref(false)
 const error   = ref(false)
@@ -21,7 +21,8 @@ export function useDiscordWidget() {
   async function load() {
     if (fetched) return
     fetched = true
-    const code = extractInviteCode(config.discordUrl)
+    const { discordUrl } = useBeta()
+    const code = extractInviteCode(discordUrl.value)
     if (!code) { error.value = true; return }
 
     loading.value = true

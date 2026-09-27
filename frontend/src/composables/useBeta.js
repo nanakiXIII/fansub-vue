@@ -3,6 +3,7 @@ import { http } from '@/services/http.js'
 import { socket } from '@/services/socket.js'
 import { getCookie } from '@/utils/cookies.js'
 import { theme, themes, layout, layouts } from '@/composables/useTheme.js'
+import { config } from '@/config.js'
 
 const betaEnabled             = ref(false)
 const maintenanceEnabled      = ref(false)
@@ -15,6 +16,11 @@ const defaultLayout           = ref('default')
 const enabledThemes           = ref(themes.map(t => t.id))
 const enabledLayouts          = ref(layouts.map(l => l.id))
 const seasonalEffect          = ref('none')
+// Liens sociaux : éditables depuis l'admin (SiteSettings), avec repli sur les valeurs
+// compilées (.env / config.js) tant qu'aucune valeur n'a été enregistrée en base.
+const discordUrl               = ref(config.discordUrl)
+const twitterUrl                = ref(config.twitterUrl)
+const githubUrl                  = ref(config.githubUrl)
 let fetchPromise = null
 
 function applyData(data) {
@@ -30,6 +36,9 @@ function applyData(data) {
   enabledThemes.value           = data.enabledThemes?.length  ? data.enabledThemes  : themes.map(t => t.id)
   enabledLayouts.value          = data.enabledLayouts?.length ? data.enabledLayouts : layouts.map(l => l.id)
   seasonalEffect.value          = data.seasonalEffect          ?? 'none'
+  discordUrl.value               = data.discordUrl || config.discordUrl
+  twitterUrl.value                = data.twitterUrl  || config.twitterUrl
+  githubUrl.value                  = data.githubUrl   || config.githubUrl
 
   // Applique le défaut admin uniquement si le visiteur n'a pas déjà sa propre préférence
   if (!getCookie('theme')  && themes.some(t => t.id === defaultTheme.value))   theme.value  = defaultTheme.value
@@ -97,10 +106,20 @@ export function useBeta() {
     applyData(await http.patch('/settings', { seasonalEffect: value }))
   }
 
+  async function setSocialLinks({ discordUrl, twitterUrl, githubUrl }) {
+    const patch = {}
+    if (discordUrl !== undefined) patch.discordUrl = discordUrl
+    if (twitterUrl !== undefined) patch.twitterUrl = twitterUrl
+    if (githubUrl  !== undefined) patch.githubUrl  = githubUrl
+    applyData(await http.patch('/settings', patch))
+  }
+
   return {
     betaEnabled, maintenanceEnabled, maintenanceAllowedRoles, foundedYear, registrationEnabled, chatEnabled,
     defaultTheme, defaultLayout, enabledThemes, enabledLayouts, seasonalEffect,
+    discordUrl, twitterUrl, githubUrl,
     setBeta, setMaintenance, setAllowedRoles, setFoundedYear, setRegistrationEnabled, setChatEnabled,
     setDefaultTheme, setDefaultLayout, setEnabledThemes, setEnabledLayouts, setSeasonalEffect,
+    setSocialLinks,
   }
 }

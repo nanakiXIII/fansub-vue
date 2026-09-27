@@ -493,7 +493,7 @@
             <p v-else>Suis les sorties en direct et échange avec l'équipe sur notre Discord.</p>
           </div>
           <div class="st-community-ctas">
-            <a :href="config.discordUrl" target="_blank" rel="noopener noreferrer" class="st-btn st-btn-solid">
+            <a :href="discordUrl" target="_blank" rel="noopener noreferrer" class="st-btn st-btn-solid">
               <img v-if="discordData?.iconUrl" :src="discordData.iconUrl" alt="" class="st-discord-icon" />
               Rejoindre le Discord
             </a>
@@ -950,6 +950,7 @@ import { http } from '@/services/http.js'
 import { useSeo } from '@/composables/useSeo.js'
 import { useContinueWatching } from '@/composables/useContinueWatching.js'
 import { useDiscordWidget } from '@/composables/useDiscordWidget.js'
+import { useBeta } from '@/composables/useBeta.js'
 import { config } from '@/config.js'
 
 const { isFavorite, toggleFavorite } = useFavorites()
@@ -990,6 +991,7 @@ function formatRelDate(d) {
   return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Paris' })
 }
 const settings = useSettings()
+const { discordUrl } = useBeta()
 
 const loading          = ref(true)
 const homeData         = ref(null)

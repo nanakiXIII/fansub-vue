@@ -147,6 +147,31 @@
       </div>
     </div>
 
+    <!-- Liens sociaux -->
+    <div class="sidebar-card">
+      <div class="sidebar-card-header">Liens sociaux</div>
+      <div class="p-3.5">
+        <p class="text-[10px] text-ink-3 mb-3 leading-relaxed max-w-md">
+          Affichés dans le pied de page et les boutons "Rejoindre le Discord" du site. Modifiables ici sans toucher au .env ni redéployer.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <label class="flex flex-col gap-1">
+            <span class="field-label">Discord</span>
+            <input v-model.trim="form.discordUrl" type="url" placeholder="https://discord.gg/…" class="field-input" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="field-label">Twitter / X</span>
+            <input v-model.trim="form.twitterUrl" type="url" placeholder="https://x.com/…" class="field-input" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="field-label">GitHub</span>
+            <input v-model.trim="form.githubUrl" type="url" placeholder="https://github.com/…" class="field-input" />
+          </label>
+        </div>
+        <p v-if="linkError" class="text-[11px] text-red-400 mt-2">{{ linkError }}</p>
+      </div>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
       <!-- Identité -->
@@ -233,9 +258,13 @@ const toast = useToast()
 
 const {
   foundedYear, registrationEnabled, chatEnabled, defaultTheme, defaultLayout, enabledThemes, enabledLayouts, seasonalEffect,
+  discordUrl, twitterUrl, githubUrl,
   setFoundedYear, setRegistrationEnabled, setChatEnabled, setDefaultTheme, setDefaultLayout,
-  setEnabledThemes, setEnabledLayouts, setSeasonalEffect,
+  setEnabledThemes, setEnabledLayouts, setSeasonalEffect, setSocialLinks,
 } = useBeta()
+
+const linkError = ref('')
+const URL_RE = /^https?:\/\/\S+$/i
 
 const seasonalOptions = [
   { id: 'none',   label: 'Aucun',  icon: '·' },
@@ -252,11 +281,14 @@ const form = reactive({
   enabledThemes:       [...enabledThemes.value],
   enabledLayouts:      [...enabledLayouts.value],
   seasonalEffect:      seasonalEffect.value,
+  discordUrl:          discordUrl.value,
+  twitterUrl:          twitterUrl.value,
+  githubUrl:           githubUrl.value,
 })
 
 // Resynchronise le formulaire si les settings arrivent après le montage (premier fetch async)
-watch([foundedYear, registrationEnabled, chatEnabled, defaultTheme, defaultLayout, enabledThemes, enabledLayouts, seasonalEffect],
-  ([fy, re, ce, dt, dl, et, el, se]) => {
+watch([foundedYear, registrationEnabled, chatEnabled, defaultTheme, defaultLayout, enabledThemes, enabledLayouts, seasonalEffect, discordUrl, twitterUrl, githubUrl],
+  ([fy, re, ce, dt, dl, et, el, se, du, tu, gu]) => {
     form.foundedYear         = fy
     form.registrationEnabled = re
     form.chatEnabled         = ce
@@ -265,6 +297,9 @@ watch([foundedYear, registrationEnabled, chatEnabled, defaultTheme, defaultLayou
     form.enabledThemes       = [...et]
     form.enabledLayouts      = [...el]
     form.seasonalEffect      = se
+    form.discordUrl          = du
+    form.twitterUrl          = tu
+    form.githubUrl           = gu
   })
 
 function toggleThemeEnabled(id) {
@@ -344,6 +379,9 @@ const dirty = computed(() =>
   || JSON.stringify([...form.enabledThemes].sort())  !== JSON.stringify([...enabledThemes.value].sort())
   || JSON.stringify([...form.enabledLayouts].sort()) !== JSON.stringify([...enabledLayouts.value].sort())
   || form.seasonalEffect !== seasonalEffect.value
+  || form.discordUrl !== discordUrl.value
+  || form.twitterUrl !== twitterUrl.value
+  || form.githubUrl  !== githubUrl.value
 )
 
 const saving = ref(false)
@@ -363,6 +401,15 @@ onBeforeUnmount(() => clearTimeout(saveTimer))
 
 async function save() {
   if (saving.value || !dirty.value) return
+
+  linkError.value = ''
+  for (const [key, label] of [['discordUrl', 'Discord'], ['twitterUrl', 'Twitter / X'], ['githubUrl', 'GitHub']]) {
+    if (form[key] && !URL_RE.test(form[key])) {
+      linkError.value = `Le lien ${label} doit commencer par http:// ou https://`
+      return
+    }
+  }
+
   saving.value = true
   try {
     if (form.foundedYear !== foundedYear.value) await setFoundedYear(form.foundedYear)
@@ -373,6 +420,9 @@ async function save() {
     if (JSON.stringify([...form.enabledThemes].sort())  !== JSON.stringify([...enabledThemes.value].sort()))  await setEnabledThemes(form.enabledThemes)
     if (JSON.stringify([...form.enabledLayouts].sort()) !== JSON.stringify([...enabledLayouts.value].sort())) await setEnabledLayouts(form.enabledLayouts)
     if (form.seasonalEffect !== seasonalEffect.value) await setSeasonalEffect(form.seasonalEffect)
+    if (form.discordUrl !== discordUrl.value || form.twitterUrl !== twitterUrl.value || form.githubUrl !== githubUrl.value) {
+      await setSocialLinks({ discordUrl: form.discordUrl, twitterUrl: form.twitterUrl, githubUrl: form.githubUrl })
+    }
     toast.success('Modifications enregistrées')
   } catch (err) {
     toast.error(err.message || 'Erreur lors de l\'enregistrement')
