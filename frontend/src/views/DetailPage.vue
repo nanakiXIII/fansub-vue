@@ -14,6 +14,15 @@
       <span class="text-[11px] text-red-400/70">— Cette série n'est pas publiée et n'est visible que par les administrateurs.</span>
     </div>
 
+    <!-- Bandeau série licenciée (visionnage/téléchargement coupés pour ce visiteur) -->
+    <div v-if="downloadsLocked" class="flex items-center gap-3 bg-amber-950/40 border-b border-amber-500/30 px-6 py-3">
+      <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      <span class="text-[12px] font-semibold text-amber-400">Série licenciée</span>
+      <span class="text-[11px] text-amber-400/70">— Le visionnage et le téléchargement ne sont plus disponibles publiquement.</span>
+    </div>
+
     <!-- ══════════════════ GUNDAM LAYOUT ══════════════════ -->
     <template v-if="layout === 'gundam'">
 
@@ -211,6 +220,20 @@
                 </span>
               </div>
               <div class="dp-info-row"><span class="dp-info-label">Source</span><span class="dp-info-value">{{ serie.source ?? '—' }}</span></div>
+              <div v-if="allowedRoleBadges.length" class="dp-info-row">
+                <span class="dp-info-label">Réservé</span>
+                <div class="flex gap-1 flex-wrap justify-end">
+                  <span v-for="r in allowedRoleBadges" :key="r.name" class="text-[8px] font-mono border px-1.5 py-px"
+                    :style="{ borderColor: (r.color || '#888') + '55', color: r.color || '#888' }">{{ r.label }}</span>
+                </div>
+              </div>
+              <div v-if="licenseExemptBadges.length" class="dp-info-row">
+                <span class="dp-info-label">Accès maintenu</span>
+                <div class="flex gap-1 flex-wrap justify-end">
+                  <span v-for="r in licenseExemptBadges" :key="r.name" class="text-[8px] font-mono border px-1.5 py-px"
+                    :style="{ borderColor: (r.color || '#888') + '55', color: r.color || '#888' }">{{ r.label }}</span>
+                </div>
+              </div>
               <div class="dp-info-row">
                 <span class="dp-info-label">Genres</span>
                 <div class="flex gap-1 flex-wrap justify-end">
@@ -396,6 +419,20 @@
                 </span>
               </div>
               <div class="info-row"><span class="info-label">Source</span><span class="info-value">{{ serie.source ?? '—' }}</span></div>
+              <div v-if="allowedRoleBadges.length" class="info-row">
+                <span class="info-label">Réservé</span>
+                <div class="flex gap-1 flex-wrap justify-end">
+                  <span v-for="r in allowedRoleBadges" :key="r.name" class="text-[9px] rounded px-1.5 py-[1px] font-semibold"
+                    :style="{ background: (r.color || '#888') + '22', color: r.color || '#888' }">{{ r.label }}</span>
+                </div>
+              </div>
+              <div v-if="licenseExemptBadges.length" class="info-row">
+                <span class="info-label">Accès maintenu</span>
+                <div class="flex gap-1 flex-wrap justify-end">
+                  <span v-for="r in licenseExemptBadges" :key="r.name" class="text-[9px] rounded px-1.5 py-[1px] font-semibold"
+                    :style="{ background: (r.color || '#888') + '22', color: r.color || '#888' }">{{ r.label }}</span>
+                </div>
+              </div>
               <div class="info-row">
                 <span class="info-label">Genres</span>
                 <div class="flex gap-1 flex-wrap justify-end">
@@ -477,8 +514,33 @@ function handleToggleFavorite(serieId) {
 const activeTab      = ref('episodes')
 const settings       = useSettings()
 const selectedSeason = ref(null)
+const roles          = ref([])
+
+// Grades auxquels cette série est réservée (vide = publique) — voir backend/src/models/Series.js
+const allowedRoleBadges = computed(() => {
+  const names = serie.value?.allowedRoles ?? []
+  return names.map(name => roles.value.find(r => r.name === name) ?? { name, label: name, color: '#888' })
+})
+
+// Grades qui gardent le visionnage/téléchargement malgré la licence
+const licenseExemptBadges = computed(() => {
+  if (serie.value?.status !== 'licensed') return []
+  const names = serie.value?.licenseExemptRoles ?? []
+  return names.map(name => roles.value.find(r => r.name === name) ?? { name, label: name, color: '#888' })
+})
+
+// Série licenciée + le backend a retiré les liens (voir backend/src/routes/series.js: canDownload/
+// lockDownloads) : ce visiteur n'a pas le grade autorisé à garder l'accès malgré la licence.
+const downloadsLocked = computed(() => {
+  if (serie.value?.status !== 'licensed') return false
+  const eps = serie.value.seasons?.length
+    ? serie.value.seasons.flatMap(s => s.episodes ?? [])
+    : (serie.value.episodes ?? [])
+  return eps.length > 0 && eps.every(ep => !ep.sources)
+})
 
 onMounted(async () => {
+  http.get('/roles').then(r => { roles.value = r }).catch(() => {})
   try {
     const data = await http.get(`/series/${route.params.id}`)
     serie.value = data ? { ...data, titleJp: data.titleJP } : null
@@ -644,8 +706,8 @@ const tabs = computed(() => [
 
 .dp-page-label {
   padding: 6px 24px;
-  background: rgba(var(--color-orange), 0.04);
-  border-bottom: 1px solid rgba(var(--color-orange), 0.1);
+  background: rgb(var(--color-orange) / 0.04);
+  border-bottom: 1px solid rgb(var(--color-orange) / 0.1);
   font-size: 9px;
   font-family: 'Courier New', monospace;
   letter-spacing: 0.2em;
@@ -664,8 +726,8 @@ const tabs = computed(() => [
 .dp-hex {
   position: absolute; inset: 0;
   background-image:
-    repeating-linear-gradient(60deg,  rgba(var(--color-orange), 0.035) 0, rgba(var(--color-orange), 0.035) 1px, transparent 0, transparent 50%),
-    repeating-linear-gradient(120deg, rgba(var(--color-orange), 0.035) 0, rgba(var(--color-orange), 0.035) 1px, transparent 0, transparent 50%);
+    repeating-linear-gradient(60deg,  rgb(var(--color-orange) / 0.035) 0, rgb(var(--color-orange) / 0.035) 1px, transparent 0, transparent 50%),
+    repeating-linear-gradient(120deg, rgb(var(--color-orange) / 0.035) 0, rgb(var(--color-orange) / 0.035) 1px, transparent 0, transparent 50%);
   background-size: 40px 40px;
 }
 .dp-hud { position: absolute; width: 18px; height: 18px; z-index: 2; }
@@ -694,7 +756,7 @@ const tabs = computed(() => [
 .dp-poster-top-bar {
   position: absolute; top: 0; left: 0; right: 0; height: 2px;
   background: rgb(var(--color-orange));
-  box-shadow: 0 0 10px rgba(var(--color-orange), 0.8);
+  box-shadow: 0 0 10px rgb(var(--color-orange) / 0.8);
   z-index: 2;
 }
 @media (max-width: 640px) { .dp-poster { width: 80px; } }
@@ -733,7 +795,7 @@ const tabs = computed(() => [
 
 .dp-hero-border {
   position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, rgb(var(--color-orange)), rgba(var(--color-orange), 0.3) 60%, transparent);
+  background: linear-gradient(90deg, rgb(var(--color-orange)), rgb(var(--color-orange) / 0.3) 60%, transparent);
 }
 
 /* Layout principal */
@@ -753,12 +815,12 @@ const tabs = computed(() => [
 
 .dp-section { }
 .dp-section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.dp-section-mark { width: 3px; height: 16px; background: rgb(var(--color-orange)); box-shadow: 0 0 8px rgba(var(--color-orange), 0.5); flex-shrink: 0; }
+.dp-section-mark { width: 3px; height: 16px; background: rgb(var(--color-orange)); box-shadow: 0 0 8px rgb(var(--color-orange) / 0.5); flex-shrink: 0; }
 
 /* Tabs */
 .dp-tabs {
   display: flex;
-  border-bottom: 1px solid rgba(var(--color-orange), 0.15);
+  border-bottom: 1px solid rgb(var(--color-orange) / 0.15);
   margin-bottom: 16px;
   gap: 0;
 }
@@ -783,7 +845,7 @@ const tabs = computed(() => [
   font-size: 10px; font-family: 'Courier New', monospace;
   background-color: rgb(var(--color-bg-2));
   color: rgb(var(--color-ink-1));
-  border: 1px solid rgba(var(--color-orange), 0.35);
+  border: 1px solid rgb(var(--color-orange) / 0.35);
   padding: 5px 24px 5px 8px;
   outline: none; cursor: pointer; appearance: none;
 }
@@ -791,8 +853,8 @@ const tabs = computed(() => [
 
 /* Sidebar cards */
 .dp-card {
-  border: 1px solid rgba(var(--color-orange), 0.12);
-  border-top: 2px solid rgba(var(--color-orange), 0.4);
+  border: 1px solid rgb(var(--color-orange) / 0.12);
+  border-top: 2px solid rgb(var(--color-orange) / 0.4);
   background: rgb(var(--color-bg-1));
 }
 .dp-card-header {
@@ -800,13 +862,13 @@ const tabs = computed(() => [
   font-size: 9px; font-family: 'Courier New', monospace;
   letter-spacing: 0.2em; text-transform: uppercase;
   color: rgb(var(--color-orange));
-  border-bottom: 1px solid rgba(var(--color-orange), 0.1);
-  background: rgba(var(--color-orange), 0.03);
+  border-bottom: 1px solid rgb(var(--color-orange) / 0.1);
+  background: rgb(var(--color-orange) / 0.03);
 }
 .dp-info-row {
   display: flex; align-items: flex-start; justify-content: space-between;
   gap: 8px; padding: 6px 0;
-  border-bottom: 1px solid rgba(var(--color-orange), 0.06);
+  border-bottom: 1px solid rgb(var(--color-orange) / 0.06);
 }
 .dp-info-row:last-child { border-bottom: none; }
 .dp-info-label { font-size: 9px; font-family: 'Courier New', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: rgb(var(--color-ink-3)); flex-shrink: 0; }
@@ -818,19 +880,19 @@ const tabs = computed(() => [
   padding: 8px 10px; margin-bottom: 4px;
   cursor: pointer; transition: background 0.15s, border-color 0.15s;
   background: rgb(var(--color-bg-2));
-  border: 1px solid rgba(var(--color-orange), 0.12);
-  border-left: 3px solid rgba(var(--color-orange), 0.25);
+  border: 1px solid rgb(var(--color-orange) / 0.12);
+  border-left: 3px solid rgb(var(--color-orange) / 0.25);
 }
 .dp-season-row:last-child { margin-bottom: 0; }
 .dp-season-row:hover {
-  background: rgba(var(--color-orange), 0.12);
-  border-left-color: rgba(var(--color-orange), 0.7);
-  border-color: rgba(var(--color-orange), 0.25);
+  background: rgb(var(--color-orange) / 0.12);
+  border-left-color: rgb(var(--color-orange) / 0.7);
+  border-color: rgb(var(--color-orange) / 0.25);
 }
 .dp-season-active {
-  background: rgba(var(--color-orange), 0.15) !important;
+  background: rgb(var(--color-orange) / 0.15) !important;
   border-left-color: rgb(var(--color-orange)) !important;
-  border-color: rgba(var(--color-orange), 0.35) !important;
-  box-shadow: inset 3px 0 10px rgba(var(--color-orange), 0.1);
+  border-color: rgb(var(--color-orange) / 0.35) !important;
+  box-shadow: inset 3px 0 10px rgb(var(--color-orange) / 0.1);
 }
 </style>

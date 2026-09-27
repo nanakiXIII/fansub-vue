@@ -29,6 +29,8 @@ const userSchema = new mongoose.Schema({
   passwordResetExpires: { type: Date,    default: null  },
   avatar:        { type: String, default: null },
   role:          { type: String, default: null },
+  theme:         { type: String, default: null },
+  layout:        { type: String, default: null },
   activeTitleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Achievement', default: null },
   socials: {
     discord:     { type: String, default: '' },

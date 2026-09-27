@@ -285,9 +285,9 @@ const requirements = [
 .rp-hero-hex {
   position: absolute; inset: 0;
   background-image:
-    repeating-linear-gradient(60deg,  rgba(var(--color-orange), 0.04) 0, rgba(var(--color-orange), 0.04) 1px, transparent 0, transparent 50%),
-    repeating-linear-gradient(120deg, rgba(var(--color-orange), 0.04) 0, rgba(var(--color-orange), 0.04) 1px, transparent 0, transparent 50%),
-    repeating-linear-gradient(0deg,   rgba(var(--color-orange), 0.04) 0, rgba(var(--color-orange), 0.04) 1px, transparent 0, transparent 50%);
+    repeating-linear-gradient(60deg,  rgb(var(--color-orange) / 0.04) 0, rgb(var(--color-orange) / 0.04) 1px, transparent 0, transparent 50%),
+    repeating-linear-gradient(120deg, rgb(var(--color-orange) / 0.04) 0, rgb(var(--color-orange) / 0.04) 1px, transparent 0, transparent 50%),
+    repeating-linear-gradient(0deg,   rgb(var(--color-orange) / 0.04) 0, rgb(var(--color-orange) / 0.04) 1px, transparent 0, transparent 50%);
   background-size: 40px 40px;
 }
 .rp-hud { position: absolute; width: 16px; height: 16px; z-index: 2; }
@@ -331,7 +331,7 @@ const requirements = [
 .rp-hero-sub { font-size: 12px; color: rgb(var(--color-ink-2)); max-width: 480px; }
 .rp-hero-bottom {
   position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, rgb(var(--color-orange)), rgba(var(--color-orange), 0.3) 60%, transparent);
+  background: linear-gradient(90deg, rgb(var(--color-orange)), rgb(var(--color-orange) / 0.3) 60%, transparent);
 }
 
 /* ── Layout ─────────────────────────────────────────────────────── */
@@ -342,7 +342,7 @@ const requirements = [
 
 /* ── Section head ───────────────────────────────────────────────── */
 .rp-section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.rp-section-mark { width: 3px; height: 16px; background: rgb(var(--color-orange)); box-shadow: 0 0 8px rgba(var(--color-orange), 0.5); flex-shrink: 0; }
+.rp-section-mark { width: 3px; height: 16px; background: rgb(var(--color-orange)); box-shadow: 0 0 8px rgb(var(--color-orange) / 0.5); flex-shrink: 0; }
 .rp-section-count { font-size: 8px; font-family: 'Courier New', monospace; letter-spacing: 0.12em; color: rgb(var(--color-ink-3)); margin-left: auto; }
 
 /* ── Rôles ──────────────────────────────────────────────────────── */
@@ -353,15 +353,15 @@ const requirements = [
 }
 .rp-role {
   background: rgb(var(--color-bg-1));
-  border: 1px solid rgba(var(--color-orange), 0.1);
+  border: 1px solid rgb(var(--color-orange) / 0.1);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .rp-role:not(.rp-role--closed):hover {
-  border-color: rgba(var(--color-orange), 0.3);
-  box-shadow: 0 0 20px rgba(var(--color-orange), 0.06);
+  border-color: rgb(var(--color-orange) / 0.3);
+  box-shadow: 0 0 20px rgb(var(--color-orange) / 0.06);
 }
 .rp-role--closed { opacity: 0.45; }
-.rp-role-top { height: 2px; background: rgba(var(--color-orange), 0.4); transition: background 0.15s; }
+.rp-role-top { height: 2px; background: rgb(var(--color-orange) / 0.4); transition: background 0.15s; }
 .rp-role:not(.rp-role--closed):hover .rp-role-top { background: rgb(var(--color-orange)); }
 .rp-role-inner { padding: 14px; }
 
@@ -400,8 +400,8 @@ const requirements = [
 }
 .rp-step-body {
   background: rgb(var(--color-bg-1));
-  border: 1px solid rgba(var(--color-orange), 0.1);
-  border-top: 2px solid rgba(var(--color-orange), 0.35);
+  border: 1px solid rgb(var(--color-orange) / 0.1);
+  border-top: 2px solid rgb(var(--color-orange) / 0.35);
   padding: 14px;
 }
 .rp-step-title { font-size: 12px; font-weight: 700; color: white; margin-bottom: 6px; letter-spacing: 0.04em; }
@@ -410,10 +410,10 @@ const requirements = [
 /* ── Ce qu'on attend ────────────────────────────────────────────── */
 .rp-requirements {
   background: rgb(var(--color-bg-1));
-  border: 1px solid rgba(var(--color-orange), 0.12);
+  border: 1px solid rgb(var(--color-orange) / 0.12);
   position: relative; overflow: hidden;
 }
-.rp-req-top { height: 2px; background: rgba(var(--color-orange), 0.45); }
+.rp-req-top { height: 2px; background: rgb(var(--color-orange) / 0.45); }
 .rp-req-inner { padding: 20px 24px; }
 .rp-req-eyebrow {
   font-size: 8px; font-family: 'Courier New', monospace;
@@ -428,16 +428,16 @@ const requirements = [
 /* ── CTA Discord ────────────────────────────────────────────────── */
 .rp-cta {
   position: relative;
-  border: 1px solid rgba(var(--color-orange), 0.2);
-  border-top: 2px solid rgba(var(--color-orange), 0.55);
+  border: 1px solid rgb(var(--color-orange) / 0.2);
+  border-top: 2px solid rgb(var(--color-orange) / 0.55);
   overflow: hidden;
   text-align: center;
 }
 .rp-cta-hex {
   position: absolute; inset: 0;
   background-image:
-    repeating-linear-gradient(60deg,  rgba(var(--color-orange), 0.02) 0, rgba(var(--color-orange), 0.02) 1px, transparent 0, transparent 50%),
-    repeating-linear-gradient(120deg, rgba(var(--color-orange), 0.02) 0, rgba(var(--color-orange), 0.02) 1px, transparent 0, transparent 50%);
+    repeating-linear-gradient(60deg,  rgb(var(--color-orange) / 0.02) 0, rgb(var(--color-orange) / 0.02) 1px, transparent 0, transparent 50%),
+    repeating-linear-gradient(120deg, rgb(var(--color-orange) / 0.02) 0, rgb(var(--color-orange) / 0.02) 1px, transparent 0, transparent 50%);
   background-size: 30px 30px;
   pointer-events: none;
 }

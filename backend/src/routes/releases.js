@@ -1,15 +1,28 @@
 const express  = require('express')
 const Release  = require('../models/Release')
 const Series   = require('../models/Series')
-const { requireAuth, requireAdmin } = require('../middleware/auth')
+const { requireAuth, requireAdmin, optionalAuth } = require('../middleware/auth')
 const { emit } = require('../socket')
 const { notifyFollowers } = require('../services/notificationService')
 const { findEpisode } = require('../utils/episodeLookup')
 
 const router = express.Router()
 
+function canPreview(req) {
+  const p = req.userPermissions ?? []
+  return p.includes('*') || p.includes('content.preview')
+}
+
+// Une série dont allowedRoles est vide est publique ; sinon réservée aux grades listés
+function canAccess(req, serie) {
+  if (canPreview(req)) return true
+  const allowed = serie.allowedRoles ?? []
+  if (!allowed.length) return true
+  return !!req.userRole && allowed.includes(req.userRole)
+}
+
 // GET /api/releases?limit=N — public
-router.get('/', async (req, res, next) => {
+router.get('/', optionalAuth, async (req, res, next) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 10, 100)
 
@@ -19,13 +32,14 @@ router.get('/', async (req, res, next) => {
     const serieIds  = [...new Set(candidates.map(r => r.serieId))]
     const seriesDocs = await Series.find(
       { id: { $in: serieIds }, visible: { $ne: false } },
-      'id seasons episodes'
+      'id seasons episodes allowedRoles'
     ).lean()
     const seriesMap = Object.fromEntries(seriesDocs.map(s => [s.id, s]))
 
     const visible = candidates.filter(r => {
       const serie = seriesMap[r.serieId]
       if (!serie) return false
+      if (!canAccess(req, serie)) return false
 
       const episode = findEpisode(serie, r.seasonSlug, r.epNum)
       return episode?.visible !== false

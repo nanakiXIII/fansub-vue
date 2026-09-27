@@ -71,8 +71,14 @@
               </svg>
             </div>
             <div class="text-center">
-              <p class="text-[14px] font-semibold text-white/60 mb-1">Source indisponible</p>
-              <p class="text-[12px] text-white/30">Connectez-vous ou revenez plus tard</p>
+              <p class="text-[14px] font-semibold text-white/60 mb-1">
+                {{ serie?.status === 'licensed' ? 'Série licenciée' : 'Source indisponible' }}
+              </p>
+              <p class="text-[12px] text-white/30">
+                {{ serie?.status === 'licensed'
+                  ? 'Cette série a été licenciée : le visionnage et le téléchargement ne sont plus disponibles.'
+                  : 'Connectez-vous ou revenez plus tard' }}
+              </p>
             </div>
           </div>
 

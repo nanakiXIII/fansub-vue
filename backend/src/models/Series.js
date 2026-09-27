@@ -42,6 +42,10 @@ const seriesSchema = new mongoose.Schema({
   isSimulcast:   { type: Boolean, default: false },
   visible:       { type: Boolean, default: true },
   mediaPath:     { type: String,  default: '' },
+  allowedRoles:  [{ type: String }], // vide = accessible à tous les grades
+  // Grades qui gardent le visionnage/téléchargement quand status === 'licensed' (indépendant
+  // d'allowedRoles : la fiche série reste visible publiquement, seuls les fichiers sont coupés)
+  licenseExemptRoles: [{ type: String }],
 }, { timestamps: true })
 
 module.exports = mongoose.model('Series', seriesSchema)

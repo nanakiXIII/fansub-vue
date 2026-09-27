@@ -173,6 +173,9 @@ const ACTION_LABELS = {
   'episode.add':        'Épisode ajouté',
   'episode.delete':     'Épisode supprimé',
   'episode.visibility': 'Visibilité épisode',
+  'theme.create':       'Thème créé',
+  'theme.update':       'Thème modifié',
+  'theme.delete':       'Thème supprimé',
 }
 function actionLabel(a) { return ACTION_LABELS[a] ?? a }
 
@@ -194,6 +197,9 @@ const ACTION_STYLES = {
   'episode.add':        'bg-emerald-500/15 text-emerald-400',
   'episode.delete':     'bg-red-500/15 text-red-400',
   'episode.visibility': 'bg-yellow-500/15 text-yellow-400',
+  'theme.create':       'bg-emerald-500/15 text-emerald-400',
+  'theme.update':       'bg-blue-500/15 text-blue-400',
+  'theme.delete':       'bg-red-500/15 text-red-400',
 }
 function actionStyle(a) { return ACTION_STYLES[a] ?? 'bg-white/[0.08] text-ink-2' }
 

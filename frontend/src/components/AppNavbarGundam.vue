@@ -323,8 +323,8 @@ onBeforeUnmount(() => {
     90deg,
     rgb(var(--color-orange)) 0px,
     rgb(var(--color-orange)) 5px,
-    rgba(var(--color-orange), 0.15) 5px,
-    rgba(var(--color-orange), 0.15) 9px
+    rgb(var(--color-orange) / 0.15) 5px,
+    rgb(var(--color-orange) / 0.15) 9px
   );
 }
 
@@ -349,7 +349,7 @@ onBeforeUnmount(() => {
   background: linear-gradient(
     90deg,
     rgb(var(--color-orange)),
-    rgba(var(--color-orange), 0.4) 60%,
+    rgb(var(--color-orange) / 0.4) 60%,
     transparent
   );
 }
@@ -364,12 +364,12 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-  filter: drop-shadow(0 0 8px rgba(var(--color-orange), 0.55));
+  filter: drop-shadow(0 0 8px rgb(var(--color-orange) / 0.55));
   flex-shrink: 0;
   transition: filter 0.2s;
 }
 a:hover .gundam-emblem {
-  filter: drop-shadow(0 0 14px rgba(var(--color-orange), 0.9));
+  filter: drop-shadow(0 0 14px rgb(var(--color-orange) / 0.9));
 }
 .gundam-site-name {
   font-size: 14px;
@@ -386,7 +386,7 @@ a:hover .gundam-emblem {
 }
 @keyframes title-pulse {
   0%, 100% { text-shadow: none; }
-  50%       { text-shadow: 0 0 12px rgba(var(--color-orange), 0.35), 0 0 28px rgba(var(--color-orange), 0.12); }
+  50%       { text-shadow: 0 0 12px rgb(var(--color-orange) / 0.35), 0 0 28px rgb(var(--color-orange) / 0.12); }
 }
 
 .gundam-sys-id {
@@ -428,13 +428,13 @@ a:hover .gundam-emblem {
 }
 .gundam-nav-link:hover {
   color: rgb(var(--color-ink-1));
-  background: rgba(var(--color-orange), 0.07);
-  border-color: rgba(var(--color-orange), 0.2);
+  background: rgb(var(--color-orange) / 0.07);
+  border-color: rgb(var(--color-orange) / 0.2);
 }
 .gundam-nav-link--active {
   color: rgb(var(--color-orange)) !important;
-  background: rgba(var(--color-orange), 0.09) !important;
-  border-color: rgba(var(--color-orange), 0.28) !important;
+  background: rgb(var(--color-orange) / 0.09) !important;
+  border-color: rgb(var(--color-orange) / 0.28) !important;
 }
 .gundam-nav-link--active::after {
   content: '';
@@ -444,7 +444,7 @@ a:hover .gundam-emblem {
   right: 0;
   height: 1px;
   background: rgb(var(--color-orange));
-  box-shadow: 0 0 6px rgba(var(--color-orange), 0.9);
+  box-shadow: 0 0 6px rgb(var(--color-orange) / 0.9);
 }
 
 /* ── Icon button ────────────────────────────────────────────────── */
@@ -455,17 +455,17 @@ a:hover .gundam-emblem {
   width: 34px;
   height: 34px;
   color: rgb(var(--color-ink-2));
-  background: rgba(var(--color-orange), 0.05);
-  border: 1px solid rgba(var(--color-orange), 0.14);
+  background: rgb(var(--color-orange) / 0.05);
+  border: 1px solid rgb(var(--color-orange) / 0.14);
   border-radius: 0;
   transition: all 0.15s;
   cursor: pointer;
 }
 .gundam-icon-btn:hover, .gundam-icon-btn--on {
   color: rgb(var(--color-orange));
-  background: rgba(var(--color-orange), 0.12);
-  border-color: rgba(var(--color-orange), 0.35);
-  box-shadow: 0 0 10px rgba(var(--color-orange), 0.15);
+  background: rgb(var(--color-orange) / 0.12);
+  border-color: rgb(var(--color-orange) / 0.35);
+  box-shadow: 0 0 10px rgb(var(--color-orange) / 0.15);
 }
 
 /* ── Profile button ─────────────────────────────────────────────── */
@@ -474,8 +474,8 @@ a:hover .gundam-emblem {
   align-items: center;
   gap: 9px;
   padding: 5px 12px 5px 6px;
-  background: rgba(var(--color-orange), 0.04);
-  border: 1px solid rgba(var(--color-orange), 0.16);
+  background: rgb(var(--color-orange) / 0.04);
+  border: 1px solid rgb(var(--color-orange) / 0.16);
   color: rgb(var(--color-ink-1));
   font-size: 12px;
   cursor: pointer;
@@ -483,9 +483,9 @@ a:hover .gundam-emblem {
 }
 .gundam-profile-btn:hover,
 .gundam-profile-btn--open {
-  background: rgba(var(--color-orange), 0.09);
-  border-color: rgba(var(--color-orange), 0.36);
-  box-shadow: 0 0 12px rgba(var(--color-orange), 0.1);
+  background: rgb(var(--color-orange) / 0.09);
+  border-color: rgb(var(--color-orange) / 0.36);
+  box-shadow: 0 0 12px rgb(var(--color-orange) / 0.1);
 }
 .gundam-pilot-bar {
   width: 3px;
@@ -498,9 +498,9 @@ a:hover .gundam-emblem {
 /* ── Dropdown ───────────────────────────────────────────────────── */
 .gundam-dropdown {
   background: rgba(5, 8, 16, 0.98);
-  border: 1px solid rgba(var(--color-orange), 0.22);
+  border: 1px solid rgb(var(--color-orange) / 0.22);
   border-top: 2px solid rgb(var(--color-orange));
-  box-shadow: 0 20px 50px rgba(0,0,0,0.85), 0 0 24px rgba(var(--color-orange), 0.06);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.85), 0 0 24px rgb(var(--color-orange) / 0.06);
 }
 .gundam-item {
   display: flex;
@@ -518,31 +518,31 @@ a:hover .gundam-emblem {
   border-left: 2px solid transparent;
 }
 .gundam-item:hover {
-  background: rgba(var(--color-orange), 0.08);
+  background: rgb(var(--color-orange) / 0.08);
   color: white;
   border-left-color: rgb(var(--color-orange));
 }
 .gundam-item--active {
-  background: rgba(var(--color-orange), 0.08);
+  background: rgb(var(--color-orange) / 0.08);
   border-left-color: rgb(var(--color-orange));
   color: rgb(var(--color-orange));
 }
 .gundam-sep {
   height: 1px;
-  background: rgba(var(--color-orange), 0.1);
+  background: rgb(var(--color-orange) / 0.1);
   margin: 2px 0;
 }
 
 /* ── Mobile ─────────────────────────────────────────────────────── */
 .gundam-mobile {
   background: rgba(5, 8, 16, 0.99);
-  border-top: 1px solid rgba(var(--color-orange), 0.15);
+  border-top: 1px solid rgb(var(--color-orange) / 0.15);
 }
 .gundam-section-label {
   font-size: 8px;
   font-family: monospace;
   letter-spacing: 0.22em;
-  color: rgba(var(--color-orange), 0.55);
+  color: rgb(var(--color-orange) / 0.55);
   padding: 0 14px 6px;
   text-transform: uppercase;
 }

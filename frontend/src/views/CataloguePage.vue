@@ -3,11 +3,18 @@
     <!-- Hero bar -->
     <div :class="layout === 'gundam'
       ? 'cat-hero-g'
-      : 'bg-bg-1 border-b border-white/[0.07] py-5 px-6'">
+      : layout === 'stream'
+        ? 'cat-hero-st'
+        : 'bg-bg-1 border-b border-white/[0.07] py-5 px-6'">
       <template v-if="layout === 'gundam'">
         <div class="cat-hero-eyebrow">// MODULE · CATALOGUE COMPLET</div>
         <h1 class="cat-hero-title">Catalogue</h1>
         <p class="cat-hero-sub">{{ filteredSeries.length }} séries sous-titrées disponibles</p>
+      </template>
+      <template v-else-if="layout === 'stream'">
+        <div class="cat-hero-eyebrow-st">Catalogue</div>
+        <h1 class="cat-hero-title-st">Explorer les séries</h1>
+        <p class="cat-hero-sub-st">{{ filteredSeries.length }} séries sous-titrées disponibles</p>
       </template>
       <template v-else>
         <h1 class="text-2xl font-extrabold text-white mb-1">Catalogue complet</h1>
@@ -18,7 +25,9 @@
     <!-- Sticky filters -->
     <div :class="layout === 'gundam'
       ? 'sticky top-[59px] z-40 cat-filters-g'
-      : 'sticky top-14 z-40 bg-bg-1 border-b border-white/[0.07]'">
+      : layout === 'stream'
+        ? 'sticky top-16 z-40 cat-filters-st'
+        : 'sticky top-14 z-40 bg-bg-1 border-b border-white/[0.07]'">
       <!-- Ligne 1 : recherche + statut + tri + vue -->
       <div class="flex items-center gap-2 px-4 py-2 border-b border-white/[0.04]">
         <!-- Search -->
@@ -131,7 +140,9 @@
             s.visible === false ? 'opacity-50 grayscale' : '',
             layout === 'gundam'
               ? 'bg-orange/[0.02] border border-orange/10 border-l-[3px] border-l-orange/25 hover:bg-orange/[0.05] hover:border-orange/25 hover:border-l-orange'
-              : 'bg-bg-1 border border-white/[0.06] rounded-xl hover:border-white/20 hover:translate-x-0.5'
+              : layout === 'stream'
+                ? 'cat-row-st'
+                : 'bg-bg-1 border border-white/[0.06] rounded-xl hover:border-white/20 hover:translate-x-0.5'
           ]"
           @click="router.push(`/serie/${s.id}`)"
         >

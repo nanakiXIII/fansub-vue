@@ -244,8 +244,8 @@ onMounted(async () => {
 <style scoped>
 .an-page-label {
   padding: 6px 24px;
-  background: rgba(var(--color-orange), 0.04);
-  border-bottom: 1px solid rgba(var(--color-orange), 0.1);
+  background: rgb(var(--color-orange) / 0.04);
+  border-bottom: 1px solid rgb(var(--color-orange) / 0.1);
   font-size: 9px;
   font-family: 'Courier New', monospace;
   letter-spacing: 0.2em;

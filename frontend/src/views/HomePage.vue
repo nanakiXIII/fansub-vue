@@ -178,7 +178,7 @@
               >
                 <div class="bento-card-img">
                   <img loading="lazy" v-if="item.thumb || item.serie?.banner || item.serie?.poster" :src="item.thumb || item.serie?.banner || item.serie?.poster" class="absolute inset-0 w-full h-full object-cover" />
-                  <div v-if="!item.thumb && !item.serie?.banner && !item.serie?.poster" class="absolute inset-0" :style="{ background: item.gradient || item.serie?.gradient || 'rgba(var(--color-orange),0.2)' }"></div>
+                  <div v-if="!item.thumb && !item.serie?.banner && !item.serie?.poster" class="absolute inset-0" :style="{ background: item.gradient || item.serie?.gradient || 'rgb(var(--color-orange) / 0.2)' }"></div>
                   <div v-if="i === 0 && item.icon" class="absolute inset-0 flex items-center justify-center pointer-events-none select-none" style="font-size:100px;opacity:0.07;filter:blur(2px)">{{ item.icon }}</div>
                   <div class="bento-card-grad"></div>
                   <div class="bento-card-scan"></div>
@@ -351,6 +351,154 @@
             </div>
           </div>
 
+        </div>
+      </div>
+    </template>
+
+    <!-- ═══════════════════════ STREAM LAYOUT ═════════════════════════ -->
+    <template v-else-if="layout === 'stream'">
+
+      <!-- Hero -->
+      <div v-if="featuredSerie" class="st-hero">
+        <Transition name="hero-fade">
+          <img loading="lazy" :key="featuredSerie.id" :src="featuredSerie.banner" :alt="featuredSerie.titleFull" class="absolute inset-0 w-full h-full object-cover" />
+        </Transition>
+        <div class="st-hero-scrim" aria-hidden="true"></div>
+
+        <Transition name="hero-fade" mode="out-in">
+          <div :key="featuredSerie.id" class="st-hero-body">
+            <div class="st-badges">
+              <span class="st-badge st-badge-live">EN TRADUCTION</span>
+              <span class="st-badge st-badge-line">{{ featuredItem.episode.lang.toUpperCase() }}</span>
+              <span v-for="g in featuredSerie.genres.slice(0, 2)" :key="g" class="st-badge st-badge-line">{{ g }}</span>
+            </div>
+            <h1 class="st-hero-title">{{ featuredSerie.titleFull }}</h1>
+            <div class="st-hero-meta">
+              <span>{{ featuredSerie.year }}</span><span>·</span>
+              <span>EP {{ featuredItem.episode.num }}</span><span>·</span>
+              <span class="st-hero-score">★ {{ featuredSerie.score }}</span><span>·</span>
+              <span>{{ featuredSerie.studio }}</span>
+            </div>
+
+            <div class="st-hero-prog">
+              <div class="st-hero-prog-head"><span>{{ currentStep }}</span><b>{{ featuredItem.translation.pct }}%</b></div>
+              <div class="st-hero-prog-track"><i :style="{ width: featuredItem.translation.pct + '%' }"></i></div>
+            </div>
+
+            <div class="st-hero-ctas">
+              <button @click="toggleFavorite(featuredSerie.id)" class="st-btn st-btn-solid">
+                <svg viewBox="0 0 24 24" :fill="isFavorite(featuredSerie.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                {{ isFavorite(featuredSerie.id) ? 'Dans ma liste' : 'Ma liste' }}
+              </button>
+              <RouterLink :to="`/serie/${featuredSerie.id}`" class="st-btn st-btn-ghost">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                Détails
+              </RouterLink>
+            </div>
+          </div>
+        </Transition>
+
+        <div class="st-hero-thumbs">
+          <button
+            v-for="(item, i) in carouselItems" :key="item.serieId"
+            class="st-hthumb" :class="i === currentSlide ? 'st-hthumb-active' : ''"
+            :style="{ backgroundImage: `url(${item.serie.poster})` }"
+            :aria-label="`Voir ${item.serie.titleFull}`"
+            @click="goToSlide(i)"
+          >
+            <span v-if="i === currentSlide" class="st-hthumb-fill hero-progress-fill" :style="{ animationDuration: SLIDE_DURATION + 'ms' }" @animationend="nextSlide"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="st-main wrap">
+
+        <!-- Actualités + colonne stats/recrutement -->
+        <div class="st-two-col">
+          <div class="st-section">
+            <div class="st-sec-head"><h2>Actualités</h2><RouterLink to="/actualites" class="st-sec-link">Toutes les actus →</RouterLink></div>
+            <div class="st-notice-list">
+              <RouterLink v-for="item in news" :key="item._id" :to="`/actualite/${item._id}`" class="st-notice">
+                <span class="badge st-notice-cat" :class="getCategoryBadge(item.category)">{{ item.category }}</span>
+                <div class="st-notice-body"><h3>{{ item.title }}</h3><p>{{ item.excerpt }}</p></div>
+                <span class="st-notice-date">{{ formatNewsDate(item.createdAt) }}</span>
+              </RouterLink>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-5">
+            <div v-if="stats.length" class="st-side-card">
+              <div class="st-side-head">Statistiques</div>
+              <div class="st-stat-grid">
+                <div v-for="stat in stats" :key="stat.label" class="st-stat-cell"><b>{{ stat.value }}</b><span>{{ stat.label }}</span></div>
+              </div>
+            </div>
+            <div class="st-side-card">
+              <div class="st-side-head">Recrutement</div>
+              <template v-if="openPositions.length">
+                <RouterLink v-for="pos in openPositions.slice(0, 4)" :key="pos._id" to="/recrutement" class="st-recruit-row">
+                  <span>{{ pos.icon || '🎯' }}</span>
+                  <span class="st-recruit-t">{{ pos.title }}</span>
+                  <span class="st-recruit-dot"></span>
+                </RouterLink>
+                <RouterLink to="/recrutement" class="st-btn st-btn-solid m-3 justify-center">Postuler →</RouterLink>
+              </template>
+              <div v-else class="p-4 text-center">
+                <div class="text-[12px] mb-2" style="color:#52606c">Aucun recrutement en cours</div>
+                <RouterLink to="/equipe" class="st-btn st-btn-ghost w-full justify-center">Découvrir l'équipe</RouterLink>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Continuer à regarder -->
+        <div v-if="continueWatching.length" class="st-section">
+          <div class="st-sec-head"><h2>Continuer à regarder</h2><RouterLink to="/profil?tab=activity" class="st-sec-link">Voir tout →</RouterLink></div>
+          <div class="st-rail">
+            <RouterLink v-for="item in continueWatching" :key="`cw-${item.serieId}-${item.seasonSlug}-${item.epNum}`" :to="item.url" class="st-card">
+              <div class="st-card-art">
+                <img loading="lazy" :src="item.episode.thumbnail || item.serie.poster" :alt="item.serie.title" class="absolute inset-0 w-full h-full object-cover" />
+                <span class="st-card-ep">EP {{ item.epNum }}</span>
+                <div class="st-card-bar"><i :style="{ width: item.pct + '%' }"></i></div>
+              </div>
+              <div class="st-card-meta"><div class="st-card-t">{{ item.serie.title }}</div><div class="st-card-s">{{ item.pct }}% visionné</div></div>
+            </RouterLink>
+          </div>
+        </div>
+
+        <!-- Dernières sorties -->
+        <div class="st-section">
+          <div class="st-sec-head"><h2>Dernières sorties</h2><RouterLink to="/sorties" class="st-sec-link">Voir tout →</RouterLink></div>
+          <div class="st-rail">
+            <RouterLink v-for="item in latestReleases" :key="`${item.serieId}-${item.seasonSlug}-${item.epNum}`" :to="`/serie/${item.serieId}?season=${item.seasonSlug}#episode-${item.epNum}`" class="st-card">
+              <div class="st-card-art">
+                <img loading="lazy" :src="item.serie.poster" :alt="item.serie.title" class="absolute inset-0 w-full h-full object-cover" />
+                <span v-if="item.isNew" class="st-card-new">NOUVEAU</span>
+                <span class="st-card-ep">EP{{ String(item.epNum).padStart(2,'0') }}</span>
+              </div>
+              <div class="st-card-meta"><div class="st-card-t">{{ item.serie.title }}</div><div class="st-card-s">{{ formatRelDate(item.releasedAt) }}</div></div>
+            </RouterLink>
+          </div>
+        </div>
+
+        <!-- Rejoins la communauté — infos Discord en direct -->
+        <div class="st-community">
+          <div>
+            <h2>Rejoins la communauté</h2>
+            <p v-if="discordData">
+              <span class="st-discord-live"><span class="st-discord-dot"></span>{{ discordData.onlineCount?.toLocaleString('fr-FR') }} en ligne</span>
+              <span v-if="discordData.memberCount"> · {{ discordData.memberCount.toLocaleString('fr-FR') }} membres</span>
+            </p>
+            <p v-else-if="discordLoading">Connexion au Discord…</p>
+            <p v-else>Suis les sorties en direct et échange avec l'équipe sur notre Discord.</p>
+          </div>
+          <div class="st-community-ctas">
+            <a :href="config.discordUrl" target="_blank" rel="noopener noreferrer" class="st-btn st-btn-solid">
+              <img v-if="discordData?.iconUrl" :src="discordData.iconUrl" alt="" class="st-discord-icon" />
+              Rejoindre le Discord
+            </a>
+            <RouterLink to="/recrutement" class="st-btn st-btn-ghost">Voir le recrutement</RouterLink>
+          </div>
         </div>
       </div>
     </template>
@@ -576,7 +724,7 @@
               >
                 <div class="bento-card-img">
                   <img loading="lazy" v-if="item.thumb" :src="item.thumb" class="absolute inset-0 w-full h-full object-cover" />
-                  <div v-if="!item.thumb" class="absolute inset-0" :style="{ background: item.gradient || 'rgba(var(--color-orange),0.2)' }"></div>
+                  <div v-if="!item.thumb" class="absolute inset-0" :style="{ background: item.gradient || 'rgb(var(--color-orange) / 0.2)' }"></div>
                   <div v-if="i === 0 && item.icon" class="absolute inset-0 flex items-center justify-center pointer-events-none select-none" style="font-size:100px;opacity:0.07;filter:blur(2px)">{{ item.icon }}</div>
                   <div class="bento-card-grad"></div>
                   <div class="bento-card-scan"></div>
@@ -801,11 +949,13 @@ import { newsDisplay, releasesDisplay } from '@/composables/usePresentation.js'
 import { http } from '@/services/http.js'
 import { useSeo } from '@/composables/useSeo.js'
 import { useContinueWatching } from '@/composables/useContinueWatching.js'
+import { useDiscordWidget } from '@/composables/useDiscordWidget.js'
 import { config } from '@/config.js'
 
 const { isFavorite, toggleFavorite } = useFavorites()
 const { socket } = useSocket()
 const { items: continueWatching } = useContinueWatching()
+const { loading: discordLoading, error: discordError, data: discordData, load: loadDiscordWidget } = useDiscordWidget()
 
 useSeo({
   title      : null,
@@ -892,6 +1042,7 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+  if (layout.value === 'stream') loadDiscordWidget()
   socket.on('new:release', onNewRelease)
   socket.on('new:news', onNewNews)
   socket.on('new:series', onNewSeries)
@@ -997,8 +1148,8 @@ function bentoGlow(i) {
 /* Bandeau page */
 .gh-page-label {
   padding: 6px 24px;
-  background: rgba(var(--color-orange), 0.04);
-  border-bottom: 1px solid rgba(var(--color-orange), 0.1);
+  background: rgb(var(--color-orange) / 0.04);
+  border-bottom: 1px solid rgb(var(--color-orange) / 0.1);
   font-size: 9px;
   font-family: 'Courier New', monospace;
   letter-spacing: 0.2em;
@@ -1017,9 +1168,9 @@ function bentoGlow(i) {
 .gh-hero-hex {
   position: absolute; inset: 0;
   background-image:
-    repeating-linear-gradient(60deg,  rgba(var(--color-orange), 0.04) 0, rgba(var(--color-orange), 0.04) 1px, transparent 0, transparent 50%),
-    repeating-linear-gradient(120deg, rgba(var(--color-orange), 0.04) 0, rgba(var(--color-orange), 0.04) 1px, transparent 0, transparent 50%),
-    repeating-linear-gradient(0deg,   rgba(var(--color-orange), 0.04) 0, rgba(var(--color-orange), 0.04) 1px, transparent 0, transparent 50%);
+    repeating-linear-gradient(60deg,  rgb(var(--color-orange) / 0.04) 0, rgb(var(--color-orange) / 0.04) 1px, transparent 0, transparent 50%),
+    repeating-linear-gradient(120deg, rgb(var(--color-orange) / 0.04) 0, rgb(var(--color-orange) / 0.04) 1px, transparent 0, transparent 50%),
+    repeating-linear-gradient(0deg,   rgb(var(--color-orange) / 0.04) 0, rgb(var(--color-orange) / 0.04) 1px, transparent 0, transparent 50%);
   background-size: 40px 40px;
 }
 
@@ -1033,7 +1184,7 @@ function bentoGlow(i) {
 /* Ligne scan verticale */
 .gh-scan-v {
   position: absolute; top: 0; bottom: 0; right: 320px; width: 1px; z-index: 1;
-  background: linear-gradient(180deg, transparent, rgba(var(--color-orange), 0.4) 30%, rgba(var(--color-orange), 0.4) 70%, transparent);
+  background: linear-gradient(180deg, transparent, rgb(var(--color-orange) / 0.4) 30%, rgb(var(--color-orange) / 0.4) 70%, transparent);
 }
 
 /* Intérieur du hero */
@@ -1071,8 +1222,8 @@ function bentoGlow(i) {
 /* Barre d'énergie */
 .gh-energy { margin-bottom: 20px; }
 .gh-energy-label-top { font-size: 7px; letter-spacing: 0.15em; text-transform: uppercase; color: rgb(var(--color-ink-3)); font-family: 'Courier New', monospace; margin-bottom: 4px; }
-.gh-energy-track { width: 180px; height: 3px; background: rgba(var(--color-orange), 0.15); position: relative; }
-.gh-energy-fill  { height: 100%; background: rgb(var(--color-orange)); box-shadow: 0 0 8px rgba(var(--color-orange), 0.6); transition: width 0.7s; }
+.gh-energy-track { width: 180px; height: 3px; background: rgb(var(--color-orange) / 0.15); position: relative; }
+.gh-energy-fill  { height: 100%; background: rgb(var(--color-orange)); box-shadow: 0 0 8px rgb(var(--color-orange) / 0.6); transition: width 0.7s; }
 .gh-energy-label { font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: rgb(var(--color-ink-3)); font-family: 'Courier New', monospace; margin-top: 4px; }
 
 /* Boutons hero */
@@ -1082,8 +1233,8 @@ function bentoGlow(i) {
 .gh-steps-panel {
   min-width: 210px;
   background: rgba(4, 7, 15, 0.88);
-  border: 1px solid rgba(var(--color-orange), 0.18);
-  border-top: 2px solid rgba(var(--color-orange), 0.45);
+  border: 1px solid rgb(var(--color-orange) / 0.18);
+  border-top: 2px solid rgb(var(--color-orange) / 0.45);
   padding: 12px 14px;
   flex-shrink: 0;
 }
@@ -1091,14 +1242,14 @@ function bentoGlow(i) {
 .gh-steps-ep { font-size: 10px; font-family: 'Courier New', monospace; letter-spacing: 0.08em; color: rgb(var(--color-orange)); font-weight: 700; line-height: 1.4; }
 .gh-step { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
 .gh-step-dot { width: 8px; height: 8px; background: rgba(255,255,255,0.1); flex-shrink: 0; transition: background 0.15s; }
-.gh-step-done   { background: rgba(var(--color-orange), 0.5) !important; }
-.gh-step-active { background: rgb(var(--color-orange)) !important; box-shadow: 0 0 6px rgba(var(--color-orange), 0.6); }
+.gh-step-done   { background: rgb(var(--color-orange) / 0.5) !important; }
+.gh-step-active { background: rgb(var(--color-orange)) !important; box-shadow: 0 0 6px rgb(var(--color-orange) / 0.6); }
 .gh-step-label  { font-size: 11px; }
 
 /* Bordure bas du hero */
 .gh-hero-bottom-border {
   position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, rgb(var(--color-orange)), rgba(var(--color-orange), 0.3) 60%, transparent);
+  background: linear-gradient(90deg, rgb(var(--color-orange)), rgb(var(--color-orange) / 0.3) 60%, transparent);
 }
 
 /* Nav carrousel Gundam */
@@ -1108,11 +1259,11 @@ function bentoGlow(i) {
 }
 .gh-dot {
   position: relative; height: 3px; width: 6px;
-  background: rgba(var(--color-orange), 0.2);
+  background: rgb(var(--color-orange) / 0.2);
   overflow: hidden; border: none; cursor: pointer; padding: 0;
   transition: width 0.3s;
 }
-.gh-dot-active { width: 28px; background: rgba(var(--color-orange), 0.15); }
+.gh-dot-active { width: 28px; background: rgb(var(--color-orange) / 0.15); }
 .gh-dot-fill {
   position: absolute; inset: 0;
   background: rgb(var(--color-orange));
@@ -1144,7 +1295,7 @@ function bentoGlow(i) {
 
 /* Section headers */
 .gh-section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.gh-section-mark { width: 3px; height: 16px; background: rgb(var(--color-orange)); box-shadow: 0 0 8px rgba(var(--color-orange), 0.5); flex-shrink: 0; }
+.gh-section-mark { width: 3px; height: 16px; background: rgb(var(--color-orange)); box-shadow: 0 0 8px rgb(var(--color-orange) / 0.5); flex-shrink: 0; }
 .gh-section-id   { font-size: 8px; font-family: 'Courier New', monospace; color: rgb(var(--color-ink-3)); letter-spacing: 0.12em; margin-left: auto; }
 .gh-section-link { font-size: 9px; font-family: 'Courier New', monospace; color: rgb(var(--color-orange)); letter-spacing: 0.1em; margin-left: auto; opacity: 0.7; transition: opacity 0.15s; }
 .gh-section-link:hover { opacity: 1; }
@@ -1153,17 +1304,17 @@ function bentoGlow(i) {
 .gh-poster-card {
   display: block;
   background: rgb(var(--color-bg-1));
-  border: 1px solid rgba(var(--color-orange), 0.12);
-  border-top: 2px solid rgba(var(--color-orange), 0.45);
+  border: 1px solid rgb(var(--color-orange) / 0.12);
+  border-top: 2px solid rgb(var(--color-orange) / 0.45);
   position: relative;
   cursor: pointer;
   transition: all 0.2s;
 }
 .gh-poster-card:hover {
   background: rgb(var(--color-bg-2));
-  border-color: rgba(var(--color-orange), 0.45);
+  border-color: rgb(var(--color-orange) / 0.45);
   border-top-color: rgb(var(--color-orange));
-  box-shadow: 0 0 0 1px rgba(var(--color-orange), 0.06), 0 8px 32px rgba(0,0,0,0.65), 0 0 20px rgba(var(--color-orange), 0.12);
+  box-shadow: 0 0 0 1px rgb(var(--color-orange) / 0.06), 0 8px 32px rgba(0,0,0,0.65), 0 0 20px rgb(var(--color-orange) / 0.12);
 }
 /* Skeleton shimmer en attendant le chargement de l'image */
 .gh-poster-skeleton {
@@ -1224,7 +1375,7 @@ function bentoGlow(i) {
   left: 0; right: 0;
   height: 100%;
   top: -100%;
-  background: linear-gradient(180deg, transparent 40%, rgba(var(--color-orange), 0.07) 50%, transparent 60%);
+  background: linear-gradient(180deg, transparent 40%, rgb(var(--color-orange) / 0.07) 50%, transparent 60%);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s;
@@ -1245,8 +1396,8 @@ function bentoGlow(i) {
    FLUX restaure son violet/cyan via [data-layout="flux"] .bento-* dans ce fichier. ── */
 
 .bento-ep-badge {
-  background: rgba(var(--color-orange),0.22); color: rgb(var(--color-orange));
-  border: 1px solid rgba(var(--color-orange),0.35);
+  background: rgb(var(--color-orange) / 0.22); color: rgb(var(--color-orange));
+  border: 1px solid rgb(var(--color-orange) / 0.35);
 }
 
 /* Grille bento (actualités) */
@@ -1258,17 +1409,17 @@ function bentoGlow(i) {
   background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
   transition: all 0.25s; text-decoration: none;
 }
-.bento-card:hover { border-color: rgba(var(--color-orange),0.3); transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.4), 0 0 20px rgba(var(--color-orange),0.12); }
+.bento-card:hover { border-color: rgb(var(--color-orange) / 0.3); transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.4), 0 0 20px rgb(var(--color-orange) / 0.12); }
 .bento-card-featured { grid-column: span 2; grid-row: span 2; position: relative; }
 .bento-card-img { position: relative; aspect-ratio: 2/3; overflow: hidden; }
 .bento-card-featured .bento-card-img { position: absolute; inset: 0; aspect-ratio: unset; width: 100%; height: 100%; }
 .bento-card-grad { position: absolute; inset: 0; background: linear-gradient(to top, rgb(var(--color-bg-0)) 0%, transparent 50%); }
-.bento-card-featured .bento-card-grad { background: linear-gradient(to top, rgb(var(--color-bg-0)) 0%, rgba(var(--color-bg-0),0.4) 45%, transparent 100%); }
+.bento-card-featured .bento-card-grad { background: linear-gradient(to top, rgb(var(--color-bg-0)) 0%, rgb(var(--color-bg-0) / 0.4) 45%, transparent 100%); }
 .bento-card-featured .bento-card-foot { position: absolute; bottom: 0; left: 0; right: 0; z-index: 2; padding: 24px 20px 20px; }
 .bento-card-featured .bento-card-ttl { font-size: 15px; -webkit-line-clamp: 3; }
 .bento-card-scan {
   position: absolute; left: 0; right: 0; height: 1px; top: 0; opacity: 0;
-  background: linear-gradient(90deg, transparent, rgba(var(--color-orange),0.6), transparent);
+  background: linear-gradient(90deg, transparent, rgb(var(--color-orange) / 0.6), transparent);
   pointer-events: none; animation: bento-scan-card 3s linear infinite;
 }
 .bento-card:hover .bento-card-scan { opacity: 1; }
@@ -1293,7 +1444,7 @@ function bentoGlow(i) {
 .bento-poster-img   { opacity: 0.82; transition: transform 0.4s ease, opacity 0.3s; }
 .bento-poster-card:hover .bento-poster-img  { transform: scale(1.06); opacity: 1; }
 .bento-poster-card:hover .bento-poster-thumb {
-  box-shadow: 0 0 0 1px rgba(var(--color-orange),0.35), 0 16px 32px rgba(0,0,0,0.6), 0 0 28px rgba(var(--color-orange),0.22);
+  box-shadow: 0 0 0 1px rgb(var(--color-orange) / 0.35), 0 16px 32px rgba(0,0,0,0.6), 0 0 28px rgb(var(--color-orange) / 0.22);
 }
 
 /* ── FLUX 2026 : restaure son violet/cyan sur ces deux grilles ── */
@@ -1304,4 +1455,85 @@ function bentoGlow(i) {
 [data-layout="flux"] .bento-poster-card:hover .bento-poster-thumb {
   box-shadow: 0 0 0 1px rgba(192,132,252,0.35), 0 16px 32px rgba(0,0,0,0.6), 0 0 28px rgba(168,85,247,0.22);
 }
+
+/* ══════════════════════════ STREAM HOME ═══════════════════════════ */
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+@media (max-width: 640px) { .wrap { padding: 0 16px; } }
+
+.st-hero { position: relative; height: 480px; display: flex; align-items: flex-end; overflow: hidden; font-family: "Manrope", sans-serif; }
+@media (max-width: 640px) { .st-hero { height: auto; padding-top: 60%; } }
+.st-hero-scrim { position: absolute; inset: 0; background: linear-gradient(to top, #060a10 6%, rgba(6,10,16,.55) 45%, transparent 80%); }
+.st-hero-body { position: relative; z-index: 1; padding: 0 24px 32px; max-width: 1180px; margin: 0 auto; width: 100%; }
+.st-badges { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.st-badge { font-family: "IBM Plex Mono"; font-size: 11px; font-weight: 600; letter-spacing: .04em; padding: 4px 9px; border-radius: 5px; }
+.st-badge-live { background: #ff5d6c; color: #2a0508; }
+.st-badge-line { border: 1px solid rgba(255,255,255,.2); color: #93a1ac; }
+.st-hero-title { font-family: "Sora"; font-size: clamp(28px,4.4vw,46px); font-weight: 800; line-height: 1.05; color: #eef4f6; margin: 0 0 12px; max-width: 20ch; }
+.st-hero-meta { display: flex; gap: 10px; align-items: center; color: #93a1ac; font-size: 13.5px; margin-bottom: 16px; flex-wrap: wrap; }
+.st-hero-score { color: #ffb648; font-weight: 700; }
+.st-hero-prog { max-width: 360px; margin-bottom: 20px; }
+.st-hero-prog-head { display: flex; justify-content: space-between; font-size: 12px; color: #93a1ac; margin-bottom: 5px; }
+.st-hero-prog-head b { color: #22d6c4; }
+.st-hero-prog-track { height: 5px; border-radius: 99px; background: rgba(255,255,255,.12); overflow: hidden; }
+.st-hero-prog-track i { display: block; height: 100%; background: #22d6c4; border-radius: 99px; }
+.st-hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+.st-btn { display: inline-flex; align-items: center; gap: 8px; font-family: "Sora"; font-weight: 600; font-size: 13.5px; padding: 10px 20px; border-radius: 9px; }
+.st-btn svg { width: 16px; height: 16px; }
+.st-btn-solid { background: #22d6c4; color: #04211d; }
+.st-btn-solid:hover { filter: brightness(1.08); }
+.st-btn-ghost { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.16); color: #eef4f6; }
+.st-btn-ghost:hover { border-color: #22d6c4; color: #22d6c4; }
+.st-hero-thumbs { position: absolute; z-index: 1; bottom: 18px; right: 24px; display: flex; gap: 8px; }
+@media (max-width: 900px) { .st-hero-thumbs { display: none; } }
+.st-hthumb { position: relative; width: 58px; height: 34px; border-radius: 6px; border: 2px solid transparent; opacity: .5; background-size: cover; background-position: center; overflow: hidden; }
+.st-hthumb-active { border-color: #22d6c4; opacity: 1; }
+.st-hthumb-fill { position: absolute; bottom: 0; left: 0; height: 2px; background: #22d6c4; width: 0%; }
+
+.st-main { padding-top: 40px; padding-bottom: 40px; font-family: "Manrope", sans-serif; }
+.st-section { margin-bottom: 40px; }
+.st-sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.st-sec-head h2 { font-family: "Sora"; font-size: 19px; font-weight: 700; color: #eef4f6; margin: 0; }
+.st-sec-link { font-size: 13px; font-weight: 600; color: #22d6c4; }
+.st-sec-link:hover { color: #5eeade; }
+
+.st-rail { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.st-rail::-webkit-scrollbar { display: none; }
+.st-card { flex: 0 0 148px; }
+.st-card-art { position: relative; aspect-ratio: 2/3; border-radius: 10px; overflow: hidden; background: #131c28; border: 1px solid rgba(255,255,255,.09); }
+.st-card-ep { position: absolute; bottom: 7px; right: 7px; font-family: "IBM Plex Mono"; font-size: 10px; font-weight: 700; background: rgba(0,0,0,.6); color: #22d6c4; padding: 2px 6px; border-radius: 4px; }
+.st-card-new { position: absolute; top: 7px; left: 7px; font-family: "IBM Plex Mono"; font-size: 9.5px; font-weight: 700; background: #ff5d6c; color: #2a0508; padding: 2px 6px; border-radius: 4px; }
+.st-card-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(0,0,0,.5); }
+.st-card-bar i { display: block; height: 100%; background: #22d6c4; }
+.st-card-meta { padding: 8px 2px 0; }
+.st-card-t { font-size: 12.5px; font-weight: 700; color: #eef4f6; line-height: 1.25; margin-bottom: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.st-card-s { font-size: 10.5px; color: #52606c; }
+
+.st-two-col { display: grid; grid-template-columns: 1fr 280px; gap: 28px; align-items: start; }
+@media (max-width: 860px) { .st-two-col { grid-template-columns: 1fr; } }
+.st-notice-list { display: flex; flex-direction: column; gap: 1px; background: rgba(255,255,255,.07); border-radius: 12px; overflow: hidden; }
+.st-notice { display: grid; grid-template-columns: 100px 1fr auto; align-items: center; gap: 16px; background: #0c131c; padding: 14px 16px; }
+@media (max-width: 560px) { .st-notice { grid-template-columns: 1fr; gap: 6px; } }
+.st-notice-cat { justify-self: start; }
+.st-notice-body h3 { font-size: 14px; font-weight: 700; color: #eef4f6; margin: 0 0 2px; }
+.st-notice-body p { font-size: 12.5px; color: #93a1ac; margin: 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.st-notice-date { font-family: "IBM Plex Mono"; font-size: 11px; color: #52606c; white-space: nowrap; }
+
+.st-side-card { background: #0c131c; border: 1px solid rgba(255,255,255,.09); border-radius: 12px; overflow: hidden; }
+.st-side-head { font-family: "Sora"; font-size: 12.5px; font-weight: 700; color: #eef4f6; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.07); }
+.st-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; }
+.st-stat-cell { text-align: center; background: #131c28; border-radius: 8px; padding: 10px 6px; }
+.st-stat-cell b { display: block; font-family: "IBM Plex Mono"; font-size: 19px; color: #22d6c4; }
+.st-stat-cell span { font-size: 9.5px; color: #52606c; text-transform: uppercase; letter-spacing: .04em; }
+.st-recruit-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,.06); font-size: 12.5px; color: #eef4f6; font-weight: 600; }
+.st-recruit-row:hover { background: rgba(255,255,255,.03); }
+.st-recruit-t { flex: 1; }
+.st-recruit-dot { width: 6px; height: 6px; border-radius: 50%; background: #6ddc7a; }
+
+.st-community { margin-top: 40px; border-radius: 16px; padding: 36px 40px; text-align: center; background: linear-gradient(155deg,#0c1420,#12222a); border: 1px solid rgba(255,255,255,.09); }
+.st-community h2 { font-family: "Sora"; font-size: 24px; font-weight: 700; color: #eef4f6; margin: 0 0 10px; }
+.st-community p { color: #93a1ac; font-size: 14px; margin: 0 0 22px; }
+.st-discord-live { display: inline-flex; align-items: center; gap: 7px; color: #6ddc7a; font-weight: 700; }
+.st-discord-dot { width: 7px; height: 7px; border-radius: 50%; background: #6ddc7a; box-shadow: 0 0 6px #6ddc7a; }
+.st-community-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.st-discord-icon { width: 18px; height: 18px; border-radius: 5px; }
 </style>

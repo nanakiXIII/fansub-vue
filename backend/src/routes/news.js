@@ -12,6 +12,14 @@ function canPreview(req) {
   return p.includes('*') || p.includes('content.preview')
 }
 
+// Un article dont allowedRoles est vide est public ; sinon réservé aux grades listés
+function canAccess(req, article) {
+  if (canPreview(req)) return true
+  const allowed = article.allowedRoles ?? []
+  if (!allowed.length) return true
+  return !!req.userRole && allowed.includes(req.userRole)
+}
+
 // GET /api/news — publié uniquement pour les visiteurs, tout pour les admins
 router.get('/', optionalAuth, async (req, res, next) => {
   try {
@@ -19,18 +27,27 @@ router.get('/', optionalAuth, async (req, res, next) => {
     const filter = {}
     if (category) filter.category = category
     if (serieId)  filter.serieId  = serieId
-    if (!canPreview(req)) filter.published = true
+    if (!canPreview(req)) {
+      filter.published = true
+      filter.$or = [
+        { allowedRoles: { $exists: false } },
+        { allowedRoles: { $size: 0 } },
+        { allowedRoles: req.userRole || '__none__' },
+      ]
+    }
     const news = await News.find(filter).sort({ createdAt: -1 })
     res.json(news)
   } catch (err) { next(err) }
 })
 
-// GET /api/news/:id — brouillons accessibles aux admins uniquement
+// GET /api/news/:id — brouillons et articles réservés inaccessibles hors grade/preview
 router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
     const article = await News.findById(req.params.id)
     if (!article) return res.status(404).json({ error: 'Article introuvable' })
     if (!article.published && !canPreview(req))
+      return res.status(404).json({ error: 'Article introuvable' })
+    if (!canAccess(req, article))
       return res.status(404).json({ error: 'Article introuvable' })
     if (!canPreview(req)) News.findByIdAndUpdate(req.params.id, { $inc: { views: 1 } }).exec()
     res.json(article)

@@ -15,7 +15,10 @@ function escapeXml(str) {
 // GET /rss.xml — flux RSS 2.0 des actualités publiées (20 dernières)
 router.get('/', async (_req, res) => {
   try {
-    const news = await News.find({ published: true }).sort({ createdAt: -1 }).limit(20).lean()
+    const news = await News.find({
+      published: true,
+      $or: [{ allowedRoles: { $exists: false } }, { allowedRoles: { $size: 0 } }],
+    }).sort({ createdAt: -1 }).limit(20).lean()
 
     const items = news.map(n => {
       const url = `${SITE_URL}/actualite/${n._id}`

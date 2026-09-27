@@ -204,7 +204,7 @@ const linkedProgressMap = computed(() => {
 .news-body ul         { list-style: disc; padding-left: 1.25rem; margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; }
 .news-body ol         { list-style: decimal; padding-left: 1.25rem; margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; }
 .news-body li         { font-size: 13px; color: rgb(var(--color-ink-2)); line-height: 1.6; }
-.news-body blockquote { border-left: 2px solid rgba(var(--color-orange), 0.6); padding-left: 0.75rem; font-style: italic; color: rgb(var(--color-ink-3)); margin: 0.75rem 0; }
+.news-body blockquote { border-left: 2px solid rgb(var(--color-orange) / 0.6); padding-left: 0.75rem; font-style: italic; color: rgb(var(--color-ink-3)); margin: 0.75rem 0; }
 .news-body hr         { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 1.5rem 0; }
 .news-body a          { color: rgb(var(--color-orange)); text-decoration: underline; }
 .news-body strong     { font-weight: 700; color: #fff; }

@@ -162,8 +162,8 @@ const legalLinks = ['Mentions légales', 'CGU', 'Confidentialité', 'Cookies']
     90deg,
     rgb(var(--color-orange)) 0px,
     rgb(var(--color-orange)) 5px,
-    rgba(var(--color-orange), 0.15) 5px,
-    rgba(var(--color-orange), 0.15) 9px
+    rgb(var(--color-orange) / 0.15) 5px,
+    rgb(var(--color-orange) / 0.15) 9px
   );
 }
 .gf-topbar-end { width: 20px; background: rgb(var(--color-orange)); }
@@ -191,7 +191,7 @@ const legalLinks = ['Mentions légales', 'CGU', 'Confidentialité', 'Cookies']
   background: rgb(var(--color-orange));
   display: flex; align-items: center; justify-content: center;
   clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
-  filter: drop-shadow(0 0 6px rgba(var(--color-orange), 0.5));
+  filter: drop-shadow(0 0 6px rgb(var(--color-orange) / 0.5));
 }
 .gf-site-name {
   font-size: 15px;
@@ -213,14 +213,14 @@ const legalLinks = ['Mentions légales', 'CGU', 'Confidentialité', 'Cookies']
   width: 30px; height: 30px;
   display: flex; align-items: center; justify-content: center;
   color: rgb(var(--color-ink-3));
-  background: rgba(var(--color-orange), 0.05);
-  border: 1px solid rgba(var(--color-orange), 0.14);
+  background: rgb(var(--color-orange) / 0.05);
+  border: 1px solid rgb(var(--color-orange) / 0.14);
   transition: all 0.15s;
 }
 .gf-social-btn:hover {
   color: rgb(var(--color-orange));
-  background: rgba(var(--color-orange), 0.1);
-  border-color: rgba(var(--color-orange), 0.35);
+  background: rgb(var(--color-orange) / 0.1);
+  border-color: rgb(var(--color-orange) / 0.35);
 }
 
 /* Statut système */
@@ -271,7 +271,7 @@ const legalLinks = ['Mentions légales', 'CGU', 'Confidentialité', 'Cookies']
 /* ── Séparateur ─────────────────────────────────────────────────── */
 .gf-divider {
   height: 1px;
-  background: linear-gradient(90deg, rgba(var(--color-orange), 0.3), rgba(var(--color-orange), 0.06) 60%, transparent);
+  background: linear-gradient(90deg, rgb(var(--color-orange) / 0.3), rgb(var(--color-orange) / 0.06) 60%, transparent);
   margin-bottom: 20px;
 }
 

@@ -204,14 +204,14 @@ onMounted(async () => {
   gap: 12px;
   padding: 10px 14px;
   background: rgb(var(--color-bg-1));
-  border: 1px solid rgba(var(--color-orange), 0.12);
-  border-top: 2px solid rgba(var(--color-orange), 0.45);
+  border: 1px solid rgb(var(--color-orange) / 0.12);
+  border-top: 2px solid rgb(var(--color-orange) / 0.45);
 }
 .cp-gh-header-mark {
   width: 3px;
   height: 20px;
   background: rgb(var(--color-orange));
-  box-shadow: 0 0 8px rgba(var(--color-orange), 0.6);
+  box-shadow: 0 0 8px rgb(var(--color-orange) / 0.6);
   flex-shrink: 0;
 }
 .cp-gh-header-title {
@@ -234,13 +234,13 @@ onMounted(async () => {
 
 .cp-gh-messages {
   background: rgb(var(--color-bg-1));
-  border: 1px solid rgba(var(--color-orange), 0.12);
+  border: 1px solid rgb(var(--color-orange) / 0.12);
   border-top: none;
-  scrollbar-color: rgba(var(--color-orange), 0.35) transparent;
+  scrollbar-color: rgb(var(--color-orange) / 0.35) transparent;
 }
 .cp-gh-messages::-webkit-scrollbar-thumb {
   border-radius: 0;
-  background: rgba(var(--color-orange), 0.35);
+  background: rgb(var(--color-orange) / 0.35);
 }
 
 .cp-gh-msg {
@@ -249,19 +249,19 @@ onMounted(async () => {
   transition: border-color 0.15s;
 }
 .cp-gh-msg:hover {
-  border-left-color: rgba(var(--color-orange), 0.4);
+  border-left-color: rgb(var(--color-orange) / 0.4);
 }
 
 .cp-gh-input-wrap {
   background: rgb(var(--color-bg-1));
-  border: 1px solid rgba(var(--color-orange), 0.15);
+  border: 1px solid rgb(var(--color-orange) / 0.15);
   border-top: none;
 }
 
 .cp-gh-input {
   flex: 1;
-  background: rgba(var(--color-orange), 0.03);
-  border: 1px solid rgba(var(--color-orange), 0.18);
+  background: rgb(var(--color-orange) / 0.03);
+  border: 1px solid rgb(var(--color-orange) / 0.18);
   color: rgb(var(--color-ink-1));
   font-size: 13px;
   padding: 8px 12px;
@@ -269,8 +269,8 @@ onMounted(async () => {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .cp-gh-input:focus {
-  border-color: rgba(var(--color-orange), 0.5);
-  box-shadow: 0 0 0 1px rgba(var(--color-orange), 0.12);
+  border-color: rgb(var(--color-orange) / 0.5);
+  box-shadow: 0 0 0 1px rgb(var(--color-orange) / 0.12);
 }
 .cp-gh-input::placeholder { color: rgb(var(--color-ink-3)); }
 
@@ -285,12 +285,12 @@ onMounted(async () => {
   border: none;
   cursor: pointer;
   clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
-  box-shadow: 0 0 12px rgba(var(--color-orange), 0.4);
+  box-shadow: 0 0 12px rgb(var(--color-orange) / 0.4);
   transition: filter 0.15s, box-shadow 0.15s;
 }
 .cp-gh-send-btn:not(:disabled):hover {
   filter: brightness(1.12);
-  box-shadow: 0 0 20px rgba(var(--color-orange), 0.6);
+  box-shadow: 0 0 20px rgb(var(--color-orange) / 0.6);
 }
 .cp-gh-send-btn:disabled {
   opacity: 0.3;

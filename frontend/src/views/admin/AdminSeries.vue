@@ -293,6 +293,28 @@
                 <input v-model="form.season" class="admin-input" placeholder="Saison 3 · Arc Culling Game" />
               </label>
 
+              <!-- Grades gardant l'accès malgré la licence -->
+              <div v-if="form.status === 'licensed'" class="flex flex-col gap-1.5 mt-1 p-3 rounded-lg border border-amber-500/20 bg-amber-500/5">
+                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest">
+                  Grades gardant l'accès malgré la licence <span class="normal-case font-normal text-ink-3">(vide = visionnage/téléchargement coupés pour tout le monde)</span>
+                </span>
+                <div v-if="!allRoles.length" class="text-[11px] text-ink-3">Aucun grade défini</div>
+                <div v-else class="flex flex-wrap gap-2">
+                  <button
+                    v-for="role in allRoles" :key="role.name"
+                    type="button"
+                    @click="toggleLicenseExemptRole(role.name)"
+                    class="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[12px] font-semibold transition-colors"
+                    :class="form.licenseExemptRoles.includes(role.name)
+                      ? 'border-amber-500/40 bg-amber-500/10 text-amber-400'
+                      : 'border-white/10 bg-bg-2 text-ink-2 hover:text-white hover:border-white/20'"
+                  >
+                    <span class="w-2 h-2 rounded-full shrink-0" :style="{ background: role.color || '#888' }"></span>
+                    {{ role.label || role.name }}
+                  </button>
+                </div>
+              </div>
+
               <div class="text-[10px] font-bold text-ink-3 uppercase tracking-widest mt-1">Genres & Tags</div>
               <label class="flex flex-col gap-1">
                 <span class="text-[10px] text-ink-3">Genres (séparés par des virgules)</span>
@@ -402,6 +424,27 @@
                 <input type="checkbox" v-model="form.visible" class="w-4 h-4 accent-orange" />
                 <span class="text-[12px] text-ink-1">Visible dans le catalogue</span>
               </label>
+
+              <div class="flex flex-col gap-1.5 mt-2">
+                <span class="text-[10px] font-bold text-ink-3 uppercase tracking-widest">
+                  Grades autorisés <span class="normal-case font-normal">(vide = public, visible par tous)</span>
+                </span>
+                <div v-if="!allRoles.length" class="text-[11px] text-ink-3">Aucun grade défini</div>
+                <div v-else class="flex flex-wrap gap-2">
+                  <button
+                    v-for="role in allRoles" :key="role.name"
+                    type="button"
+                    @click="toggleAllowedRole(role.name)"
+                    class="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[12px] font-semibold transition-colors"
+                    :class="form.allowedRoles.includes(role.name)
+                      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
+                      : 'border-white/10 bg-bg-2 text-ink-2 hover:text-white hover:border-white/20'"
+                  >
+                    <span class="w-2 h-2 rounded-full shrink-0" :style="{ background: role.color || '#888' }"></span>
+                    {{ role.label || role.name }}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -545,6 +588,26 @@
                   <span class="text-[12px] text-ink-1">Visible</span>
                 </label>
               </div>
+
+              <!-- Image de l'épisode -->
+              <div class="flex flex-col gap-1">
+                <span class="text-[10px] text-ink-3">Image (miniature)</span>
+                <div class="flex items-center gap-2">
+                  <img v-if="epForm.thumbnail" :src="epForm.thumbnail" class="w-16 h-9 rounded object-cover border border-white/10 shrink-0" />
+                  <input v-model="epForm.thumbnail" class="admin-input flex-1 font-mono text-[11px]" placeholder="URL de l'image ou récupère-la depuis TMDB…" />
+                  <button v-if="epSerie?.tmdbId" type="button" @click="fetchEpisodeThumbnail" :disabled="epImageFetching || !epForm.num"
+                    class="shrink-0 flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-2 rounded-lg border transition-colors disabled:opacity-50"
+                    :class="epImageFetching ? 'border-white/10 bg-bg-3 text-ink-3' : 'border-purple-500/40 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20'"
+                    title="Récupérer l'image de cet épisode sur TMDB">
+                    <svg v-if="!epImageFetching" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    <svg v-else class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                    {{ epImageFetching ? '…' : 'TMDB' }}
+                  </button>
+                  <button v-if="epForm.thumbnail" type="button" @click="epForm.thumbnail = ''" class="text-ink-3 hover:text-red-400 transition-colors text-[10px] shrink-0" title="Supprimer">✕</button>
+                </div>
+                <p v-if="epImageError" class="text-[11px] text-red-400">{{ epImageError }}</p>
+              </div>
+
               <div class="text-[10px] font-bold text-ink-3 uppercase tracking-widest">Fichiers vidéo (optionnels)</div>
               <div class="flex flex-col gap-2">
                 <div v-for="q in ['1080p','720p','480p']" :key="q" class="flex items-center gap-2">
@@ -775,9 +838,24 @@ const emptyForm = () => ({
   score: null, episodesAired: null, duration: '', season: '',
   genresStr: '', tagsStr: '', synopsis: '',
   visible: true, tmdbId: null, mediaPath: '',
+  allowedRoles: [],
+  licenseExemptRoles: [],
 })
 
 const form = ref(emptyForm())
+
+// ── Grades autorisés ─────────────────────────────────────────────
+const allRoles = ref([])
+function toggleAllowedRole(name) {
+  const current = form.value.allowedRoles
+  const i = current.indexOf(name)
+  i === -1 ? current.push(name) : current.splice(i, 1)
+}
+function toggleLicenseExemptRole(name) {
+  const current = form.value.licenseExemptRoles
+  const i = current.indexOf(name)
+  i === -1 ? current.push(name) : current.splice(i, 1)
+}
 
 const filtered = computed(() => {
   if (activeFilter.value === 'hidden')  return series.value.filter(s => s.visible === false)
@@ -854,6 +932,7 @@ function slugify(str) {
 
 onMounted(async () => {
   try { series.value = await http.get('/series?managed=1') } catch {}
+  try { allRoles.value = await http.get('/roles') } catch {}
   loading.value = false
 })
 
@@ -902,6 +981,8 @@ function openEdit(s) {
     visible:       s.visible !== false,
     tmdbId:        s.tmdbId        ?? null,
     mediaPath:     s.mediaPath     ?? '',
+    allowedRoles:  s.allowedRoles  ? [...s.allowedRoles] : [],
+    licenseExemptRoles: s.licenseExemptRoles ? [...s.licenseExemptRoles] : [],
   }
   resetModal()
   parseGradient()
@@ -964,6 +1045,7 @@ async function applyTMDB(r) {
       visible:       false,
       tmdbId:        d.id ?? null,
       mediaPath:     '',
+      allowedRoles:  [],
     }
     tmdbApplied.value  = true
     tmdbResults.value  = []
@@ -1107,6 +1189,8 @@ const epExtractErr  = ref('')
 const tmdbSeason    = ref(1)
 const tmdbImporting = ref(false)
 const tmdbImportErr = ref('')
+const epImageFetching = ref(false)
+const epImageError   = ref('')
 
 const currentEpisodes = computed(() => {
   if (!epSerie.value) return []
@@ -1177,6 +1261,7 @@ function openAddEpForm() {
     url1080: '', url720: '', url480: '', subUrl: '',
   }
   epExtractErr.value = ''
+  epImageError.value = ''
   showEpForm.value = true
 }
 
@@ -1195,6 +1280,7 @@ function startEditEp(ep, idx) {
     subUrl:  ep.subUrl   || '',
   }
   epExtractErr.value = ''
+  epImageError.value = ''
   showEpForm.value = true
 }
 
@@ -1284,6 +1370,29 @@ async function importFromTMDB() {
     tmdbImportErr.value = e.message
   } finally {
     tmdbImporting.value = false
+  }
+}
+
+// Récupère uniquement l'image d'un épisode donné sur TMDB (utile pour un épisode ajouté à la
+// main, sans passer par l'import de saison complète)
+async function fetchEpisodeThumbnail() {
+  const tmdbId = epSerie.value?.tmdbId
+  const num    = parseInt(epForm.value.num)
+  if (!tmdbId || !tmdbKey || isNaN(num)) return
+  epImageFetching.value = true
+  epImageError.value = ''
+  try {
+    const season = tmdbSeason.value || 1
+    const url = `${TMDB_BASE}/tv/${tmdbId}/season/${season}/episode/${num}?language=fr-FR&api_key=${tmdbKey}`
+    const res = await fetch(url)
+    const d   = await res.json()
+    if (!res.ok) throw new Error(d.status_message || 'Épisode introuvable sur TMDB')
+    if (!d.still_path) throw new Error('Aucune image disponible pour cet épisode sur TMDB')
+    epForm.value.thumbnail = `${TMDB_IMG}w300${d.still_path}`
+  } catch (e) {
+    epImageError.value = e.message
+  } finally {
+    epImageFetching.value = false
   }
 }
 

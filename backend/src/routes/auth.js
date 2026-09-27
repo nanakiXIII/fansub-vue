@@ -8,6 +8,7 @@ const { body, validationResult } = require('express-validator')
 const User        = require('../models/User')
 const Role        = require('../models/Role')
 const SiteSettings = require('../models/SiteSettings')
+const Theme        = require('../models/Theme')
 const Achievement = require('../models/Achievement')
 const { checkForUser } = require('../services/achievementChecker')
 const Favorite    = require('../models/Favorite')
@@ -73,7 +74,7 @@ async function sanitizeUser(user) {
     const ach = await Achievement.findById(user.activeTitleId).select('rewardTitle color').lean()
     if (ach?.rewardTitle) activeTitle = { label: ach.rewardTitle, color: ach.color ?? null }
   }
-  return { id: user._id, username: user.username, email: user.email, isAdmin: user.isAdmin, emailVerified: user.emailVerified, avatar: user.avatar, role: user.role ?? null, roleLabel, roleColor, activeTitle, permissions, socials: user.socials ?? {}, favoriteMedia: user.favoriteMedia ?? [] }
+  return { id: user._id, username: user.username, email: user.email, isAdmin: user.isAdmin, emailVerified: user.emailVerified, avatar: user.avatar, role: user.role ?? null, roleLabel, roleColor, activeTitle, permissions, socials: user.socials ?? {}, favoriteMedia: user.favoriteMedia ?? [], theme: user.theme ?? null, layout: user.layout ?? null }
 }
 
 // Tokens (vérification email / reset mot de passe) : on ne stocke jamais la valeur brute,
@@ -308,6 +309,12 @@ router.patch('/me',
   body('email').optional().isEmail().normalizeEmail().withMessage('Email invalide'),
   body('avatar').optional({ nullable: true }).isString(),
   body('newPassword').optional().isLength({ min: 8 }).withMessage('Nouveau mot de passe : 8 caractères minimum'),
+  body('theme').optional().custom(async (value) => {
+    if (['braise', 'ametiste', 'abysses', 'sakura', 'air'].includes(value)) return true
+    if (await Theme.exists({ slug: value })) return true
+    throw new Error('Palette invalide')
+  }),
+  body('layout').optional().isIn(['default', 'glass', 'gundam', 'flux', 'stream']),
   async (req, res, next) => {
     const errors = validationResult(req)
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
@@ -323,6 +330,8 @@ router.patch('/me',
       }
       if (req.body.email  !== undefined) user.email  = req.body.email
       if (req.body.avatar !== undefined) user.avatar = req.body.avatar
+      if (req.body.theme  !== undefined) user.theme  = req.body.theme
+      if (req.body.layout !== undefined) user.layout = req.body.layout
       if (req.body.socials !== undefined && typeof req.body.socials === 'object') {
         const socials = user.socials?.toObject?.() ?? user.socials ?? {}
         for (const key of SOCIAL_KEYS) {

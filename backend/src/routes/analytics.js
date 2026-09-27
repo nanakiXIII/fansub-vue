@@ -60,13 +60,21 @@ router.post('/pageview', async (req, res) => {
   } catch { res.json({ ok: true }) } // silencieux côté client
 })
 
-// GET /api/analytics/summary — admin
+// GET /api/analytics/summary?month=YYYY-MM — admin
+// `month` sélectionne le mois calendaire affiché par le graphique journalier (par défaut : mois en cours).
 router.get('/summary', requireAuth, requirePermission('analytics.view'), async (req, res, next) => {
   try {
     const now   = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const weekAgo  = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7)
-    const monthAgo = new Date(today); monthAgo.setDate(monthAgo.getDate() - 30)
+
+    // Mois calendaire sélectionné (borné au mois en cours si une date future est demandée)
+    const monthParam = /^\d{4}-\d{2}$/.test(req.query.month || '') ? req.query.month : null
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const selectedMonth = monthParam && monthParam <= currentMonthKey ? monthParam : currentMonthKey
+    const [selYear, selMonthNum] = selectedMonth.split('-').map(Number)
+    const monthStart = new Date(selYear, selMonthNum - 1, 1)
+    const monthEnd   = new Date(selYear, selMonthNum, 1)
 
     const uniqueCount = (match) => PageView.aggregate([
       { $match: { sessionId: { $ne: null }, ...match } },
@@ -78,11 +86,16 @@ router.get('/summary', requireAuth, requirePermission('analytics.view'), async (
       totalViews,
       todayViews,
       weekViews,
+      monthViews,
       totalUnique,
       todayUnique,
       weekUnique,
+      monthUnique,
+      firstPageView,
       daily,
       dailyUnique,
+      monthly,
+      monthlyUnique,
       topPages,
       topCountries,
       topSources,
@@ -90,26 +103,43 @@ router.get('/summary', requireAuth, requirePermission('analytics.view'), async (
       PageView.countDocuments(),
       PageView.countDocuments({ createdAt: { $gte: today } }),
       PageView.countDocuments({ createdAt: { $gte: weekAgo } }),
+      PageView.countDocuments({ createdAt: { $gte: monthStart, $lt: monthEnd } }),
       uniqueCount({}),
       uniqueCount({ createdAt: { $gte: today } }),
       uniqueCount({ createdAt: { $gte: weekAgo } }),
+      uniqueCount({ createdAt: { $gte: monthStart, $lt: monthEnd } }),
+      PageView.findOne().sort({ createdAt: 1 }).select('createdAt').lean(),
 
-      // 30 derniers jours — vues
+      // Mois sélectionné — vues par jour
       PageView.aggregate([
-        { $match: { createdAt: { $gte: monthAgo } } },
+        { $match: { createdAt: { $gte: monthStart, $lt: monthEnd } } },
         { $group: {
-          _id: { y: { $year: '$createdAt' }, m: { $month: '$createdAt' }, d: { $dayOfMonth: '$createdAt' } },
+          _id: { d: { $dayOfMonth: '$createdAt' } },
           count: { $sum: 1 },
         }},
-        { $sort: { '_id.y': 1, '_id.m': 1, '_id.d': 1 } },
+        { $sort: { '_id.d': 1 } },
       ]),
 
-      // 30 derniers jours — visiteurs uniques
+      // Mois sélectionné — visiteurs uniques par jour
       PageView.aggregate([
-        { $match: { createdAt: { $gte: monthAgo }, sessionId: { $ne: null } } },
-        { $group: { _id: { y: { $year: '$createdAt' }, m: { $month: '$createdAt' }, d: { $dayOfMonth: '$createdAt' }, s: '$sessionId' } } },
-        { $group: { _id: { y: '$_id.y', m: '$_id.m', d: '$_id.d' }, count: { $sum: 1 } } },
-        { $sort: { '_id.y': 1, '_id.m': 1, '_id.d': 1 } },
+        { $match: { createdAt: { $gte: monthStart, $lt: monthEnd }, sessionId: { $ne: null } } },
+        { $group: { _id: { d: { $dayOfMonth: '$createdAt' }, s: '$sessionId' } } },
+        { $group: { _id: { d: '$_id.d' }, count: { $sum: 1 } } },
+        { $sort: { '_id.d': 1 } },
+      ]),
+
+      // Depuis le début — vues par mois
+      PageView.aggregate([
+        { $group: { _id: { y: { $year: '$createdAt' }, m: { $month: '$createdAt' } }, count: { $sum: 1 } } },
+        { $sort: { '_id.y': 1, '_id.m': 1 } },
+      ]),
+
+      // Depuis le début — visiteurs uniques par mois
+      PageView.aggregate([
+        { $match: { sessionId: { $ne: null } } },
+        { $group: { _id: { y: { $year: '$createdAt' }, m: { $month: '$createdAt' }, s: '$sessionId' } } },
+        { $group: { _id: { y: '$_id.y', m: '$_id.m' }, count: { $sum: 1 } } },
+        { $sort: { '_id.y': 1, '_id.m': 1 } },
       ]),
 
       PageView.aggregate([
@@ -132,23 +162,40 @@ router.get('/summary', requireAuth, requirePermission('analytics.view'), async (
       ]),
     ])
 
-    // Formater les jours pour un graphique (30 entrées)
-    const dailyMap       = {}
-    const dailyUniqueMap = {}
-    for (const d of daily)       { const k = `${d._id.y}-${String(d._id.m).padStart(2,'0')}-${String(d._id.d).padStart(2,'0')}`; dailyMap[k]       = d.count }
-    for (const d of dailyUnique) { const k = `${d._id.y}-${String(d._id.m).padStart(2,'0')}-${String(d._id.d).padStart(2,'0')}`; dailyUniqueMap[k] = d.count }
-
+    // Graphique journalier : un point par jour du mois sélectionné (28 à 31 selon le mois)
+    const dailyMap       = Object.fromEntries(daily.map(d       => [d._id.d, d.count]))
+    const dailyUniqueMap = Object.fromEntries(dailyUnique.map(d => [d._id.d, d.count]))
+    const daysInMonth = monthEnd.getTime() === new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime()
+      ? now.getDate() // mois en cours : s'arrête à aujourd'hui plutôt que de projeter des jours futurs à 0
+      : new Date(selYear, selMonthNum, 0).getDate()
     const dailyChart = []
-    for (let i = 29; i >= 0; i--) {
-      const d   = new Date(today); d.setDate(d.getDate() - i)
-      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-      dailyChart.push({ date: key, count: dailyMap[key] ?? 0, unique: dailyUniqueMap[key] ?? 0 })
+    for (let day = 1; day <= daysInMonth; day++) {
+      const key = `${selYear}-${String(selMonthNum).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+      dailyChart.push({ date: key, count: dailyMap[day] ?? 0, unique: dailyUniqueMap[day] ?? 0 })
+    }
+
+    // Graphique mensuel : un point par mois, depuis le tout premier enregistrement
+    const monthlyMap       = Object.fromEntries(monthly.map(m       => [`${m._id.y}-${String(m._id.m).padStart(2,'0')}`, m.count]))
+    const monthlyUniqueMap = Object.fromEntries(monthlyUnique.map(m => [`${m._id.y}-${String(m._id.m).padStart(2,'0')}`, m.count]))
+    const monthlyChart = []
+    if (firstPageView) {
+      const start = new Date(firstPageView.createdAt)
+      let cursor = new Date(start.getFullYear(), start.getMonth(), 1)
+      const end  = new Date(now.getFullYear(), now.getMonth(), 1)
+      while (cursor <= end) {
+        const key = `${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}`
+        monthlyChart.push({ month: key, count: monthlyMap[key] ?? 0, unique: monthlyUniqueMap[key] ?? 0 })
+        cursor.setMonth(cursor.getMonth() + 1)
+      }
     }
 
     res.json({
-      totalViews, todayViews, weekViews,
-      totalUnique, todayUnique, weekUnique,
+      totalViews, todayViews, weekViews, monthViews,
+      totalUnique, todayUnique, weekUnique, monthUnique,
+      selectedMonth,
+      firstMonth: monthlyChart[0]?.month ?? currentMonthKey,
       dailyChart,
+      monthlyChart,
       topPages:     topPages.map(p => ({ path: p._id, pageType: p.pageType, count: p.count })),
       topCountries: topCountries.map(c => ({ country: c._id, count: c.count })),
       topSources:   topSources.map(s => ({ source: s._id, count: s.count })),

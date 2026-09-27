@@ -1,38 +1,45 @@
 <template>
-  <div class="min-h-[calc(100vh-3.5rem)] flex items-center justify-center px-4 py-12">
+  <div class="min-h-[calc(100vh-3.5rem)] relative flex items-center justify-center px-4 py-12 overflow-hidden">
 
-    <!-- Layout : mascotte à gauche, formulaire à droite -->
-    <div class="flex flex-col lg:flex-row items-center gap-10 w-full max-w-3xl">
+    <!-- Fond : jaquettes des séries en noir et blanc, défilement continu -->
+    <div class="login-bg" aria-hidden="true">
+      <div
+        v-for="(col, i) in posterColumns" :key="i"
+        class="login-bg-col"
+        :style="{ animationDuration: col.duration + 's', animationDirection: i % 2 ? 'reverse' : 'normal' }"
+      >
+        <img v-for="(src, j) in col.items" :key="j" :src="src" loading="lazy" alt="" />
+      </div>
+    </div>
+    <div class="login-bg-overlay" aria-hidden="true"></div>
 
-      <!-- ══ COLONNE GAUCHE : mascotte ══ -->
-      <div class="w-full lg:w-auto flex justify-center shrink-0 lg:sticky lg:top-1/2 lg:-translate-y-1/2">
-        <div class="mascot-col">
-          <Transition name="bubble" mode="out-in">
-            <!-- Succès -->
-            <div v-if="success" key="success" class="bubble-box bubble-success">
-              <strong class="block text-[13px] font-extrabold mb-0.5">Compte créé ! 🎉</strong>
-              <span class="text-[11px] opacity-80 leading-snug">Tu peux maintenant te connecter.</span>
-              <span class="bubble-tail-down bubble-tail-success"/>
-            </div>
-            <!-- Erreur -->
-            <div v-else-if="globalError" key="err" class="bubble-box bubble-error">
-              {{ globalError }}
-              <span class="bubble-tail-down bubble-tail-error"/>
-            </div>
-            <!-- Bienvenue (par défaut) -->
-            <div v-else key="welcome" class="bubble-box bubble-welcome">
-              <strong class="block text-[13px] font-extrabold mb-0.5">Créer un compte !</strong>
-              <span class="text-[11px] opacity-75 leading-snug">Rejoins la communauté&nbsp;✨</span>
-              <span class="bubble-tail-down bubble-tail-welcome"/>
-            </div>
-          </Transition>
+    <div class="w-full max-w-sm relative z-10">
 
-          <AppMascot :size="150" :class="{ 'mascot-shake': shaking }"/>
-        </div>
+      <!-- En-tête -->
+      <div class="flex flex-col items-center text-center mb-6">
+        <h1 class="text-[34px] font-extrabold text-white leading-tight">Créer un compte</h1>
+        <p class="text-[12px] text-ink-3 mt-1">Rejoins la communauté</p>
       </div>
 
-      <!-- ══ COLONNE DROITE : formulaire ══ -->
-      <div class="flex-1 w-full min-w-0">
+      <!-- Alerte succès -->
+      <Transition name="alert">
+        <div v-if="success" class="alert-box alert-success mb-4">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <span>Compte créé ! Tu peux maintenant te connecter.</span>
+        </div>
+      </Transition>
+
+      <!-- Alerte erreur -->
+      <Transition name="alert">
+        <div v-if="globalError" class="alert-box mb-4">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>{{ globalError }}</span>
+        </div>
+      </Transition>
 
       <!-- Inscriptions fermées -->
       <div v-if="!registrationEnabled" class="bg-bg-1 border border-white/[0.08] rounded-2xl p-6 shadow-2xl text-center">
@@ -43,7 +50,7 @@
       </div>
 
       <!-- Carte formulaire -->
-      <div v-else class="bg-bg-1 border border-white/[0.08] rounded-2xl p-6 shadow-2xl">
+      <div v-else class="bg-bg-1 border border-white/[0.08] rounded-2xl p-6 shadow-2xl" :class="{ shake: shaking }">
 
         <!-- OAuth : masqué si aucun provider configuré -->
         <template v-if="providers.google || providers.discord">
@@ -205,15 +212,14 @@
       </div>
 
       <!-- Lien connexion -->
-      <p class="text-center text-[12px] text-ink-3 mt-5">
+      <p class="text-center text-[13px] text-ink-3 mt-5">
         Déjà un compte ?
-        <RouterLink to="/connexion" class="text-orange hover:text-orange-hover font-semibold transition-colors ml-1">
+        <RouterLink to="/connexion" class="text-orange hover:text-orange-hover font-bold text-[15px] transition-colors ml-1.5">
           Se connecter
         </RouterLink>
       </p>
 
-      </div><!-- fin colonne droite -->
-    </div><!-- fin layout -->
+    </div>
   </div>
 </template>
 
@@ -221,10 +227,10 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppCaptcha from '@/components/AppCaptcha.vue'
-import AppMascot from '@/components/AppMascot.vue'
 import { useAuth } from '@/composables/useAuth.js'
 import { useOAuthProviders, loadProviders } from '@/composables/useOAuthProviders.js'
 import { useBeta } from '@/composables/useBeta.js'
+import { http } from '@/services/http.js'
 
 const { registrationEnabled } = useBeta()
 const captchaRef = ref(null)
@@ -244,13 +250,37 @@ function oauthLogin(provider) {
   window.location.href = `/api/auth/${provider}`
 }
 
-onMounted(() => { loadProviders() })
+// ── Fond animé : jaquettes des séries réparties en colonnes qui défilent en boucle ──
+const posterColumns = ref([])
+const COLS = 6
+
+async function loadPosterBackground() {
+  try {
+    const series = await http.get('/series')
+    const posters = series.map(s => s.poster).filter(Boolean)
+    if (!posters.length) return
+    const shuffled = [...posters].sort(() => Math.random() - 0.5)
+    const cols = Array.from({ length: COLS }, () => [])
+    shuffled.forEach((src, i) => cols[i % COLS].push(src))
+    posterColumns.value = cols
+      .filter(items => items.length)
+      .map(items => ({
+        items: [...items, ...items],
+        duration: 40 + Math.random() * 25,
+      }))
+  } catch { /* pas grave si ça échoue, le fond reste uni */ }
+}
+
+onMounted(() => {
+  loadProviders()
+  loadPosterBackground()
+})
 
 const shaking = ref(false)
 watch(globalError, (val) => {
   if (val) {
     shaking.value = true
-    setTimeout(() => { shaking.value = false }, 520)
+    setTimeout(() => { shaking.value = false }, 420)
   }
 })
 
@@ -350,72 +380,81 @@ async function submit() {
 </script>
 
 <style scoped>
-/* ── Zone mascotte ────────────────────────────────── */
-.mascot-col {
+/* ── Fond animé : jaquettes en noir et blanc ────────── */
+.login-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  gap: 8px;
+  padding: 0 8px;
+  filter: grayscale(1) contrast(0.9);
+}
+.login-bg-col {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 8px;
+  animation-name: login-bg-scroll;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+.login-bg-col img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+@keyframes login-bg-scroll {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-bg-col { animation: none; }
+}
+.login-bg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgb(var(--color-bg-0) / 0.88) 0%, rgb(var(--color-bg-0) / 0.94) 55%, rgb(var(--color-bg-0)) 100%),
+    radial-gradient(ellipse at 50% 45%, transparent 0%, rgb(var(--color-bg-0) / 0.5) 70%);
 }
 
-/* ── Bulle de dialogue ────────────────────────────── */
-.bubble-box {
-  position: relative;
-  padding: 9px 14px;
-  border-radius: 12px;
+/* ── Alertes ────────────────────────────────────────── */
+.alert-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
   font-size: 12px;
   font-weight: 500;
-  line-height: 1.45;
-  text-align: center;
-  border: 1px solid;
-  max-width: 200px;
-  margin-bottom: 10px;
-}
-.bubble-welcome {
-  background: rgb(255 255 255 / 0.06);
-  border-color: rgb(255 255 255 / 0.13);
-  color: rgb(var(--color-ink-1));
-}
-.bubble-error {
-  background: rgb(239 68 68 / 0.12);
-  border-color: rgb(239 68 68 / 0.35);
+  line-height: 1.4;
+  background: rgb(239 68 68 / 0.1);
+  border: 1px solid rgb(239 68 68 / 0.3);
   color: #f87171;
 }
-.bubble-success {
-  background: rgb(34 197 94 / 0.12);
-  border-color: rgb(34 197 94 / 0.35);
+.alert-success {
+  background: rgb(34 197 94 / 0.1);
+  border-color: rgb(34 197 94 / 0.3);
   color: #4ade80;
 }
+.alert-enter-active { transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.alert-leave-active { transition: all 0.15s ease-in; }
+.alert-enter-from, .alert-leave-to { opacity: 0; transform: translateY(-6px); }
 
-/* Queue triangulaire vers le bas */
-.bubble-tail-down {
-  position: absolute;
-  bottom: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0; height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-}
-.bubble-tail-welcome { border-top: 8px solid rgb(255 255 255 / 0.13); }
-.bubble-tail-error   { border-top: 8px solid rgb(239 68 68 / 0.35); }
-.bubble-tail-success { border-top: 8px solid rgb(34 197 94 / 0.35); }
-
-/* ── Transitions bulle ────────────────────────────── */
-.bubble-enter-active { transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.bubble-leave-active { transition: all 0.16s ease-in; }
-.bubble-enter-from, .bubble-leave-to { opacity: 0; transform: scale(0.88); }
-
-/* ── Shake mascotte sur erreur ────────────────────── */
-.mascot-shake :deep(.mascot-img) {
-  animation: reg-shake 0.5s ease-in-out !important;
-}
+/* ── Secousse de la carte sur erreur ───────────────── */
+.shake { animation: reg-shake 0.42s ease-in-out; }
 @keyframes reg-shake {
   0%, 100% { transform: translateX(0); }
-  18%       { transform: translateX(-7px) rotate(-3deg); }
-  36%       { transform: translateX(7px)  rotate(3deg);  }
-  54%       { transform: translateX(-5px) rotate(-2deg); }
-  72%       { transform: translateX(5px)  rotate(2deg);  }
-  90%       { transform: translateX(-2px); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
 }
 
 .auth-input {

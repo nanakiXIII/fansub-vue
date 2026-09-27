@@ -494,12 +494,80 @@
 
     </template>
 
+    <!-- ── Onglet Préférences ── -->
+    <template v-if="activeTab === 'preferences'">
+
+      <div class="grid grid-cols-3 gap-3">
+        <div class="bg-bg-1 border border-white/[0.07] rounded-2xl p-4 flex flex-col gap-1">
+          <div class="text-[10px] font-bold text-ink-3 uppercase tracking-widest">Membres</div>
+          <div class="text-[28px] font-extrabold tracking-tight text-white">
+            {{ loading ? '—' : prefsData.totalUsers.toLocaleString('fr-FR') }}
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <!-- Thèmes (palettes de couleurs) -->
+        <div class="bg-bg-1 border border-white/[0.07] rounded-2xl p-4">
+          <div class="text-[11px] font-bold text-ink-2 mb-3">Thème (palette de couleurs)</div>
+          <div class="flex flex-col gap-2.5">
+            <template v-if="loading">
+              <div v-for="n in 4" :key="n" class="h-7 bg-white/[0.05] rounded animate-pulse"></div>
+            </template>
+            <template v-else>
+              <div v-for="row in prefsData.themes" :key="row.id" class="flex flex-col gap-1">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[11px] text-ink-1 flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ background: themeMeta(row.id).swatch[1] }"></span>
+                    {{ themeMeta(row.id).label }}
+                  </span>
+                  <span class="text-[11px] font-bold text-orange shrink-0">{{ row.count.toLocaleString('fr-FR') }} · {{ prefPct(row.count) }}%</span>
+                </div>
+                <div class="h-1 rounded-full bg-white/[0.07]">
+                  <div class="h-full rounded-full" :style="{ width: prefPct(row.count) + '%', background: themeMeta(row.id).swatch[1] }"></div>
+                </div>
+              </div>
+              <div v-if="!prefsData.themes.length" class="text-[11px] text-ink-3 py-2">Aucune donnée</div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Templates (mise en page) -->
+        <div class="bg-bg-1 border border-white/[0.07] rounded-2xl p-4">
+          <div class="text-[11px] font-bold text-ink-2 mb-3">Template (mise en page)</div>
+          <div class="flex flex-col gap-2.5">
+            <template v-if="loading">
+              <div v-for="n in 4" :key="n" class="h-7 bg-white/[0.05] rounded animate-pulse"></div>
+            </template>
+            <template v-else>
+              <div v-for="row in prefsData.layouts" :key="row.id" class="flex flex-col gap-1">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[11px] text-ink-1 flex items-center gap-1.5">
+                    <span class="w-3.5 text-center shrink-0">{{ layoutMeta(row.id).icon }}</span>
+                    {{ layoutMeta(row.id).label }}
+                  </span>
+                  <span class="text-[11px] font-bold text-blue-400 shrink-0">{{ row.count.toLocaleString('fr-FR') }} · {{ prefPct(row.count) }}%</span>
+                </div>
+                <div class="h-1 rounded-full bg-white/[0.07]">
+                  <div class="h-full rounded-full bg-blue-400/70" :style="{ width: prefPct(row.count) + '%' }"></div>
+                </div>
+              </div>
+              <div v-if="!prefsData.layouts.length" class="text-[11px] text-ink-3 py-2">Aucune donnée</div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+    </template>
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { http } from '@/services/http.js'
+import { allThemes, layouts } from '@/composables/useTheme.js'
 
 // ── Onglets ──────────────────────────────────────────────────────
 const tabs = [
@@ -523,6 +591,11 @@ const tabs = [
     label: 'Membres',
     icon: '<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
   },
+  {
+    id: 'preferences',
+    label: 'Préférences',
+    icon: '<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19" cy="17" r="2.5"/><circle cx="6" cy="12" r="2.5"/><path d="M6 12h13.5M13.5 9v3"/></svg>',
+  },
 ]
 const activeTab = ref('series')
 
@@ -532,20 +605,31 @@ const seriesData   = ref({ totalViews: 0, totalDownloads: 0, totalSeries: 0, row
 const newsData     = ref({ totalViews: 0, totalComments: 0, totalArticles: 0, rows: [] })
 const commentsData = ref({ total: 0, pending: 0, approved: 0, rejected: 0, perSerie: [], perArticle: [] })
 const membresData  = ref({ rows: [], top10Watchers: [], top10Downloaders: [] })
+const prefsData    = ref({ totalUsers: 0, themes: [], layouts: [] })
 
 async function reload() {
   loading.value = true
-  const [s, n, c, m] = await Promise.allSettled([
+  const [s, n, c, m, p] = await Promise.allSettled([
     http.get('/stats/series'),
     http.get('/stats/news'),
     http.get('/stats/comments'),
     http.get('/stats/membres'),
+    http.get('/stats/preferences'),
   ])
   if (s.status === 'fulfilled') seriesData.value   = s.value
   if (n.status === 'fulfilled') newsData.value     = n.value
   if (c.status === 'fulfilled') commentsData.value = c.value
   if (m.status === 'fulfilled') membresData.value  = m.value
+  if (p.status === 'fulfilled') prefsData.value    = p.value
   loading.value = false
+}
+
+// ── Préférences (thème / template) ────────────────────────────────
+function themeMeta(id)  { return allThemes.value.find(t => t.id === id)  ?? { label: id, swatch: ['#888'] } }
+function layoutMeta(id) { return layouts.find(l => l.id === id) ?? { label: id, icon: '▣' } }
+function prefPct(count) {
+  const max = Math.max(1, prefsData.value.totalUsers)
+  return Math.round((count / max) * 100)
 }
 onMounted(reload)
 

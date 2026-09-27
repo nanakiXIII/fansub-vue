@@ -24,6 +24,36 @@ function canModifySerie(req, serieId) {
   return ids.length === 0 || ids.includes(String(serieId))
 }
 
+// Une série dont allowedRoles est vide est publique ; sinon réservée aux grades listés
+function canAccess(req, serie) {
+  if (canPreview(req)) return true
+  const allowed = serie.allowedRoles ?? []
+  if (!allowed.length) return true
+  return !!req.userRole && allowed.includes(req.userRole)
+}
+
+// Une série licenciée reste visible (fiche, synopsis...) mais son visionnage/téléchargement
+// est coupé pour le public — sauf pour les grades listés dans licenseExemptRoles (accès interne
+// maintenu malgré la licence, indépendant d'allowedRoles). Une liste vide bloque tout le monde.
+function canDownload(req, serie) {
+  if (serie.status !== 'licensed') return true
+  if (canPreview(req)) return true
+  const exempt = serie.licenseExemptRoles ?? []
+  return !!req.userRole && exempt.includes(req.userRole)
+}
+
+// Retire les liens directs (vidéo + sous-titres) d'une liste d'épisodes — le reste
+// (titre, image, date, visibilité) est conservé pour que la page reste informative.
+function stripSources(list) {
+  return (list ?? []).map(ep => ({ ...ep, sources: null, subUrl: '' }))
+}
+
+function lockDownloads(serie) {
+  if (serie.episodes) serie.episodes = stripSources(serie.episodes)
+  if (serie.seasons)  serie.seasons  = serie.seasons.map(s => ({ ...s, episodes: stripSources(s.episodes) }))
+  return serie
+}
+
 // GET /api/series?status=&genre=&search=&managed=1
 router.get('/', optionalAuth, async (req, res, next) => {
   try {
@@ -35,7 +65,20 @@ router.get('/', optionalAuth, async (req, res, next) => {
       { title:     { $regex: search, $options: 'i' } },
       { titleFull: { $regex: search, $options: 'i' } },
     ]
-    if (!canPreview(req)) filter.visible = { $ne: false }
+    if (!canPreview(req)) {
+      filter.visible = { $ne: false }
+      const roleOr = [
+        { allowedRoles: { $exists: false } },
+        { allowedRoles: { $size: 0 } },
+        { allowedRoles: req.userRole || '__none__' },
+      ]
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, { $or: roleOr }]
+        delete filter.$or
+      } else {
+        filter.$or = roleOr
+      }
+    }
 
     // ?managed=1 : restreindre aux séries autorisées par le grade
     const perms = req.userPermissions ?? []
@@ -44,6 +87,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
     }
 
     const series = await Series.find(filter).sort({ createdAt: -1 }).lean()
+    for (const s of series) { if (!canDownload(req, s)) lockDownloads(s) }
     res.json(series)
   } catch (err) { next(err) }
 })
@@ -55,6 +99,9 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
     if (!serie) return res.status(404).json({ error: 'Série introuvable' })
     if (serie.visible === false && !canPreview(req))
       return res.status(404).json({ error: 'Série introuvable' })
+    if (!canAccess(req, serie))
+      return res.status(404).json({ error: 'Série introuvable' })
+    if (!canDownload(req, serie)) lockDownloads(serie)
     res.json(serie)
   } catch (err) { next(err) }
 })

@@ -1,6 +1,7 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { authService } from '@/services/auth.js'
 import { useSettings } from './useSettings.js'
+import { theme, layout } from './useTheme.js'
 import { userSync } from '@/services/userSync.js'
 import { hydrateFromServer as hydrateFavorites, resetFavorites, useFavorites } from './useFavorites.js'
 import { hydrateFromServer as hydrateProgress,  resetProgress,  useProgress  } from './useProgress.js'
@@ -25,7 +26,17 @@ function syncSettings(user, settings) {
   settings.activeTitle = user.activeTitle ?? null
   settings.permissions = user.permissions ?? []
   settings.emailVerified = user.emailVerified ?? true
+  // Le thème/template suit le compte s'il en a un d'enregistré (sinon on garde la préférence locale/cookie)
+  if (user.theme)  theme.value  = user.theme
+  if (user.layout) layout.value = user.layout
 }
+
+// Renvoie le thème/template choisi vers le compte dès qu'un utilisateur connecté en change,
+// pour qu'ils suivent son compte d'un appareil à l'autre et alimentent les stats admin.
+watch([theme, layout], ([t, l]) => {
+  if (!authUser.value) return
+  http.patch('/auth/me', { theme: t, layout: l }).catch(() => {})
+})
 
 // Envoie la progression/favoris/téléchargements anonymes (accumulés avant inscription) vers le
 // compte qui vient d'être créé. Sans ça, le fetchAndHydrate() qui suit écraserait ces données

@@ -15,6 +15,7 @@ const newsSchema = new mongoose.Schema({
   contentHtml: { type: String, default: '' },
   heroSource:  { type: String, default: 'custom' },
   published:   { type: Boolean, default: true },
+  allowedRoles: [{ type: String }], // vide = accessible à tous les grades
   views:       { type: Number, default: 0 },
 }, { timestamps: true })
 

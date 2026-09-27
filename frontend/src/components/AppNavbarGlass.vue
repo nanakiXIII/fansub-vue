@@ -186,7 +186,7 @@ const {
 
 <style scoped>
 .glass-navbar {
-  background: rgba(var(--color-bg-0), 0.55);
+  background: rgb(var(--color-bg-0) / 0.55);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
@@ -194,7 +194,7 @@ const {
 }
 .glass-orb {
   background: rgb(var(--color-orange));
-  box-shadow: 0 0 12px rgba(var(--color-orange), 0.5), 0 0 24px rgba(var(--color-orange), 0.2);
+  box-shadow: 0 0 12px rgb(var(--color-orange) / 0.5), 0 0 24px rgb(var(--color-orange) / 0.2);
 }
 .glass-title {
   background: linear-gradient(90deg, rgb(var(--color-orange)) 0%, rgb(var(--color-ink-1)) 30%, rgb(var(--color-orange-hover)) 60%, rgb(var(--color-ink-1)) 80%, rgb(var(--color-orange)) 100%);
@@ -204,7 +204,7 @@ const {
   -webkit-text-fill-color: transparent;
   color: transparent;
   animation: shimmer 6s linear infinite;
-  filter: drop-shadow(0 0 8px rgba(var(--color-orange), 0.3));
+  filter: drop-shadow(0 0 8px rgb(var(--color-orange) / 0.3));
 }
 @keyframes shimmer { to { background-position: -200% center; } }
 
@@ -222,7 +222,7 @@ const {
   width: 100%;
   height: 2px;
   background: linear-gradient(90deg, transparent, rgb(var(--color-orange)), transparent);
-  box-shadow: 0 0 8px rgba(var(--color-orange), 0.6);
+  box-shadow: 0 0 8px rgb(var(--color-orange) / 0.6);
   border-radius: 2px;
   transition: transform 0.25s ease;
 }
@@ -241,7 +241,7 @@ const {
   color: white;
   background: rgba(255, 255, 255, 0.09);
   border-color: rgba(255, 255, 255, 0.14);
-  box-shadow: 0 0 12px rgba(var(--color-orange), 0.1);
+  box-shadow: 0 0 12px rgb(var(--color-orange) / 0.1);
 }
 
 .glass-profile-btn {
@@ -254,11 +254,11 @@ const {
   color: white;
   background: rgba(255, 255, 255, 0.09);
   border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 0 16px rgba(var(--color-orange), 0.08);
+  box-shadow: 0 0 16px rgb(var(--color-orange) / 0.08);
 }
 
 .glass-dropdown {
-  background: rgba(var(--color-bg-1), 0.75);
+  background: rgb(var(--color-bg-1) / 0.75);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -281,12 +281,12 @@ const {
   text-align: left;
 }
 .glass-menu-item:hover { background: rgba(255, 255, 255, 0.06); color: white; }
-.glass-menu-item--active { background: rgba(var(--color-orange), 0.08); color: white; }
+.glass-menu-item--active { background: rgb(var(--color-orange) / 0.08); color: white; }
 
 .glass-divider { height: 1px; background: rgba(255, 255, 255, 0.07); margin: 2px 12px; }
 
 .glass-mobile-menu {
-  background: rgba(var(--color-bg-0), 0.8);
+  background: rgb(var(--color-bg-0) / 0.8);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid rgba(255, 255, 255, 0.06);

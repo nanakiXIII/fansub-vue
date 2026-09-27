@@ -20,9 +20,10 @@ const STATIC = [
 
 router.get('/', async (_req, res) => {
   try {
+    const publicOnly = { $or: [{ allowedRoles: { $exists: false } }, { allowedRoles: { $size: 0 } }] }
     const [series, news] = await Promise.all([
-      Series.find({ visible: true }, 'id updatedAt').lean(),
-      News.find({ published: true }, '_id updatedAt').lean(),
+      Series.find({ visible: true, ...publicOnly }, 'id updatedAt').lean(),
+      News.find({ published: true, ...publicOnly }, '_id updatedAt').lean(),
     ])
 
     const staticUrls = STATIC.map(p => `

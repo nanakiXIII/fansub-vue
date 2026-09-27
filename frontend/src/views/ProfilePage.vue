@@ -748,7 +748,7 @@
         <div class="p-4">
           <div class="text-[11px] text-ink-3 mb-3 leading-relaxed max-w-md">Choisis la palette de couleurs utilisée sur l'ensemble du site.</div>
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <button v-for="t in themes" :key="t.id" type="button"
+            <button v-for="t in availableThemes" :key="t.id" type="button"
               class="rounded-lg border-2 p-2.5 text-left transition-colors cursor-pointer"
               :class="theme === t.id ? 'border-orange bg-orange/10' : 'border-white/10 bg-bg-2 hover:border-white/25'"
               @click="theme = t.id">
@@ -770,7 +770,7 @@
         <div class="p-4">
           <div class="text-[11px] text-ink-3 mb-3 leading-relaxed max-w-md">Choisis la mise en page globale du site.</div>
           <div class="flex gap-3">
-            <button v-for="l in layouts" :key="l.id" type="button"
+            <button v-for="l in availableLayouts" :key="l.id" type="button"
               class="flex-1 rounded-lg border-2 p-3 text-center transition-all cursor-pointer"
               :class="layout === l.id ? 'border-orange bg-orange/10' : 'border-white/10 bg-bg-2 hover:border-white/25'"
               @click="layout = l.id">
@@ -893,7 +893,7 @@ import { ref, reactive, computed, watch, onMounted, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { useBeta } from '@/composables/useBeta.js'
 import { overlayOpacity, overlayAlpha } from '@/composables/useImageOverlay.js'
-import { theme, themes, layout, layouts } from '@/composables/useTheme.js'
+import { theme, allThemes, layout, layouts } from '@/composables/useTheme.js'
 import {
   newsDisplay, newsDisplays,
   releasesDisplay, releasesDisplays,
@@ -1052,7 +1052,9 @@ async function submitUsername() {
 const previewImage    = 'https://picsum.photos/seed/naruto/300/450'
 const previewGradient = 'linear-gradient(155deg,#2a1505,#4a2408,#1a0d02)'
 
-const { betaEnabled } = useBeta()
+const { betaEnabled, enabledThemes, enabledLayouts } = useBeta()
+const availableThemes  = computed(() => allThemes.value.filter(t => enabledThemes.value.includes(t.id)))
+const availableLayouts = computed(() => layouts.filter(l => enabledLayouts.value.includes(l.id)))
 
 const tabs = computed(() => [
   { key: 'about',    label: 'Profil'     },

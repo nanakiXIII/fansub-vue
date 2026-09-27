@@ -40,6 +40,7 @@
     </template>
     <!-- Toujours monté pour recevoir les alertes et les mises à jour settings -->
     <SiteAlert />
+    <SeasonalEffect />
 
     <!-- Bandeau maintenance visible uniquement pour les admins -->
     <Transition name="slide-up">
@@ -70,15 +71,18 @@ import AppNavbar       from '@/components/AppNavbar.vue'
 import AppNavbarGlass  from '@/components/AppNavbarGlass.vue'
 import AppNavbarGundam from '@/components/AppNavbarGundam.vue'
 import AppNavbarFlux   from '@/components/AppNavbarFlux.vue'
+import AppNavbarStream from '@/components/AppNavbarStream.vue'
 import AppFooter       from '@/components/AppFooter.vue'
 import AppFooterGundam from '@/components/AppFooterGundam.vue'
 import AppFooterFlux   from '@/components/AppFooterFlux.vue'
+import AppFooterStream from '@/components/AppFooterStream.vue'
 import CookieBanner    from '@/components/CookieBanner.vue'
 import AchievementToast from '@/components/AchievementToast.vue'
 import AppToast         from '@/components/AppToast.vue'
 import ChatWidget      from '@/components/ChatWidget.vue'
 import BugReportWidget from '@/components/BugReportWidget.vue'
 import SiteAlert       from '@/components/SiteAlert.vue'
+import SeasonalEffect  from '@/components/SeasonalEffect.vue'
 import MaintenancePage from '@/components/MaintenancePage.vue'
 import { useAuth }     from '@/composables/useAuth.js'
 import { useSocket }   from '@/composables/useSocket.js'
@@ -98,11 +102,13 @@ const currentNavbar = computed(() => {
   if (layout.value === 'glass')  return AppNavbarGlass
   if (layout.value === 'gundam') return AppNavbarGundam
   if (layout.value === 'flux')   return AppNavbarFlux
+  if (layout.value === 'stream') return AppNavbarStream
   return AppNavbar
 })
 const currentFooter = computed(() => {
   if (layout.value === 'gundam') return AppFooterGundam
   if (layout.value === 'flux')   return AppFooterFlux
+  if (layout.value === 'stream') return AppFooterStream
   return AppFooter
 })
 

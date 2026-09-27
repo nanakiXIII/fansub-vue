@@ -14,6 +14,23 @@ function canPreview(req) {
   return p.includes('*') || p.includes('content.preview')
 }
 
+// Un document dont allowedRoles est vide est public ; sinon réservé aux grades listés
+function canAccess(req, doc) {
+  if (canPreview(req)) return true
+  const allowed = doc.allowedRoles ?? []
+  if (!allowed.length) return true
+  return !!req.userRole && allowed.includes(req.userRole)
+}
+
+// Une série licenciée coupe le visionnage/téléchargement pour le public, sauf pour les grades
+// listés dans licenseExemptRoles (indépendant d'allowedRoles ; une liste vide bloque tout le monde)
+function canDownload(req, serie) {
+  if (serie.status !== 'licensed') return true
+  if (canPreview(req)) return true
+  const exempt = serie.licenseExemptRoles ?? []
+  return !!req.userRole && exempt.includes(req.userRole)
+}
+
 // GET /api/home — retourne toutes les données nécessaires pour la home en une requête
 router.get('/', optionalAuth, async (req, res, next) => {
   try {
@@ -22,14 +39,18 @@ router.get('/', optionalAuth, async (req, res, next) => {
     const inProgressFilter = preview ? {} : { visible: true }
     const seriesFilter     = preview ? {} : { visible: { $ne: false } }
 
-    const [inProgressDocs, releaseDocs, newsDocs, seriesCount, memberCount, seriesAll] = await Promise.all([
+    const [inProgressDocs, releaseDocs, newsDocsAll, seriesCount, memberCount, seriesAllRaw] = await Promise.all([
       InProgress.find(inProgressFilter).sort({ order: 1, createdAt: 1 }),
       Release.find().sort({ releasedAt: -1 }).limit(100),
-      News.find(preview ? {} : { published: true }).sort({ createdAt: -1 }).limit(5),
+      News.find(preview ? {} : { published: true }).sort({ createdAt: -1 }).limit(20),
       Series.countDocuments(seriesFilter),
       User.countDocuments(),
-      Series.find(seriesFilter, 'id title titleFull titleJP season poster banner gradient status year studio score genres episodes seasons episodesAired'),
+      Series.find(seriesFilter, 'id title titleFull titleJP season poster banner gradient status year studio score genres episodes seasons episodesAired allowedRoles licenseExemptRoles'),
     ])
+
+    // Retire les séries / news réservées à un grade que l'utilisateur n'a pas
+    const seriesAll  = seriesAllRaw.filter(s => canAccess(req, s))
+    const newsDocs   = newsDocsAll.filter(n => canAccess(req, n)).slice(0, 5)
 
     // Index séries par id pour jointures rapides
     const seriesMap = {}
@@ -97,6 +118,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
 
       const episodeObj = episode ? episode.toObject?.() ?? episode : null
       if (episodeObj?.visible === false) return null
+      if (episodeObj && !canDownload(req, serie)) { episodeObj.sources = null; episodeObj.subUrl = '' }
 
       return { ...r.toObject(), serie: serieObj, episode: episodeObj, dateLabel, isNew }
     }).filter(Boolean).slice(0, 6)

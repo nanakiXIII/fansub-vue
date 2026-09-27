@@ -12,6 +12,9 @@ const registrationEnabled     = ref(true)
 const chatEnabled             = ref(true)
 const defaultTheme            = ref('braise')
 const defaultLayout           = ref('default')
+const enabledThemes           = ref(themes.map(t => t.id))
+const enabledLayouts          = ref(layouts.map(l => l.id))
+const seasonalEffect          = ref('none')
 let fetchPromise = null
 
 function applyData(data) {
@@ -24,10 +27,17 @@ function applyData(data) {
   chatEnabled.value              = data.chatEnabled             ?? true
   defaultTheme.value            = data.defaultTheme            ?? 'braise'
   defaultLayout.value           = data.defaultLayout           ?? 'default'
+  enabledThemes.value           = data.enabledThemes?.length  ? data.enabledThemes  : themes.map(t => t.id)
+  enabledLayouts.value          = data.enabledLayouts?.length ? data.enabledLayouts : layouts.map(l => l.id)
+  seasonalEffect.value          = data.seasonalEffect          ?? 'none'
 
   // Applique le défaut admin uniquement si le visiteur n'a pas déjà sa propre préférence
   if (!getCookie('theme')  && themes.some(t => t.id === defaultTheme.value))   theme.value  = defaultTheme.value
   if (!getCookie('layout') && layouts.some(l => l.id === defaultLayout.value)) layout.value = defaultLayout.value
+
+  // Repli si la préférence actuelle (cookie ou compte) vient d'être désactivée par un admin
+  if (!enabledThemes.value.includes(theme.value))   theme.value  = defaultTheme.value
+  if (!enabledLayouts.value.includes(layout.value)) layout.value = defaultLayout.value
 }
 
 // Mise à jour en temps réel quand un admin change les settings
@@ -75,10 +85,22 @@ export function useBeta() {
     applyData(await http.patch('/settings', { defaultLayout: value }))
   }
 
+  async function setEnabledThemes(ids) {
+    applyData(await http.patch('/settings', { enabledThemes: ids }))
+  }
+
+  async function setEnabledLayouts(ids) {
+    applyData(await http.patch('/settings', { enabledLayouts: ids }))
+  }
+
+  async function setSeasonalEffect(value) {
+    applyData(await http.patch('/settings', { seasonalEffect: value }))
+  }
+
   return {
     betaEnabled, maintenanceEnabled, maintenanceAllowedRoles, foundedYear, registrationEnabled, chatEnabled,
-    defaultTheme, defaultLayout,
+    defaultTheme, defaultLayout, enabledThemes, enabledLayouts, seasonalEffect,
     setBeta, setMaintenance, setAllowedRoles, setFoundedYear, setRegistrationEnabled, setChatEnabled,
-    setDefaultTheme, setDefaultLayout,
+    setDefaultTheme, setDefaultLayout, setEnabledThemes, setEnabledLayouts, setSeasonalEffect,
   }
 }

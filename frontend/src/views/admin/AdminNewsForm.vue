@@ -179,6 +179,26 @@
           </div>
         </div>
 
+        <!-- Grades autorisés -->
+        <div class="flex flex-col gap-1.5">
+          <span class="field-label">Grades autorisés <span class="text-ink-3 normal-case font-normal">(vide = public, visible par tous)</span></span>
+          <div v-if="!allRoles.length" class="text-[11px] text-ink-3">Aucun grade défini</div>
+          <div v-else class="flex flex-wrap gap-2">
+            <button
+              v-for="role in allRoles" :key="role.name"
+              type="button"
+              @click="toggleAllowedRole(role.name)"
+              class="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[12px] font-semibold transition-colors"
+              :class="form.allowedRoles.includes(role.name)
+                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
+                : 'border-white/10 bg-bg-2 text-ink-2 hover:text-white hover:border-white/20'"
+            >
+              <span class="w-2 h-2 rounded-full shrink-0" :style="{ background: role.color || '#888' }"></span>
+              {{ role.label || role.name }}
+            </button>
+          </div>
+        </div>
+
         <!-- Extrait -->
         <div class="flex flex-col gap-1.5">
           <div class="flex items-center justify-between">
@@ -542,6 +562,14 @@ function excerptFromHtml(html, n = 40) {
 }
 function autoExcerpt() { form.value.excerpt = excerptFromHtml(form.value.contentHtml) }
 
+// ── Grades autorisés ─────────────────────────────────────────────
+const allRoles = ref([])
+function toggleAllowedRole(name) {
+  const current = form.value.allowedRoles
+  const i = current.indexOf(name)
+  i === -1 ? current.push(name) : current.splice(i, 1)
+}
+
 // ── Données / série ───────────────────────────────────────────────
 const allSeries       = ref([])
 const serieSearch     = ref('')
@@ -575,11 +603,16 @@ const form = ref({
   heroSource: 'custom',
   published: true,
   serieId: null, episodeNums: [],
+  allowedRoles: [],
 })
 
 onMounted(async () => {
-  const [s] = await Promise.all([http.get('/series').catch(() => [])])
+  const [s, r] = await Promise.all([
+    http.get('/series').catch(() => []),
+    http.get('/roles').catch(() => []),
+  ])
   allSeries.value = s
+  allRoles.value  = r
 
   if (isEdit.value) {
     try {
@@ -596,6 +629,7 @@ onMounted(async () => {
         published:   a.published   ?? true,
         serieId:     a.serieId     ?? null,
         episodeNums: a.episodeNums ? [...a.episodeNums] : [],
+        allowedRoles: a.allowedRoles ? [...a.allowedRoles] : [],
       }
       serieSearch.value = selectedSerie.value?.title ?? ''
       parseGradient()

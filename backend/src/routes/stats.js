@@ -6,6 +6,9 @@ const Series         = require('../models/Series')
 const WatchProgress  = require('../models/WatchProgress')
 const Download       = require('../models/Download')
 const UserAchievement = require('../models/UserAchievement')
+const User           = require('../models/User')
+const Release        = require('../models/Release')
+const { findEpisode } = require('../utils/episodeLookup')
 const { requireAuth, requirePermission } = require('../middleware/auth')
 const { checkForUser } = require('../services/achievementChecker')
 
@@ -114,6 +117,155 @@ router.get('/', requireAuth, requirePermission('stats.view'), async (_req, res) 
     totalWatched, totalWatchedCompleted, totalMemberDownloads, totalAchievements,
     memberTopSeriesViews, memberTopSeriesDownloads,
   })
+})
+
+// GET /api/stats/preferences — répartition des thèmes/templates choisis par les membres (admin)
+router.get('/preferences', requireAuth, requirePermission('stats.view'), async (_req, res, next) => {
+  try {
+    const [themeCounts, layoutCounts, totalUsers] = await Promise.all([
+      User.aggregate([
+        { $group: { _id: '$theme', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ]),
+      User.aggregate([
+        { $group: { _id: '$layout', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ]),
+      User.countDocuments(),
+    ])
+    res.json({
+      totalUsers,
+      themes:  themeCounts.map(t  => ({ id: t._id  ?? 'braise',  count: t.count  })),
+      layouts: layoutCounts.map(l => ({ id: l._id ?? 'default', count: l.count })),
+    })
+  } catch (err) { next(err) }
+})
+
+// Ne garde que les sorties d'épisodes encore visibles aujourd'hui (même logique que /api/releases)
+async function filterVisibleReleases(releases) {
+  const serieIds = [...new Set(releases.map(r => r.serieId))]
+  const seriesDocs = await Series.find({ id: { $in: serieIds } }, 'id seasons episodes').lean()
+  const seriesMap  = Object.fromEntries(seriesDocs.map(s => [s.id, s]))
+  return releases.filter(r => {
+    const serie = seriesMap[r.serieId]
+    if (!serie) return false
+    return findEpisode(serie, r.seasonSlug, r.epNum)?.visible !== false
+  })
+}
+
+// GET /api/stats/timeline?month=YYYY-MM — comptes créés / news publiées / épisodes sortis (visibles) / vues / téléchargements, par jour et par mois (admin)
+router.get('/timeline', requireAuth, requirePermission('stats.view'), async (req, res, next) => {
+  try {
+    const now = new Date()
+    const monthParam = /^\d{4}-\d{2}$/.test(req.query.month || '') ? req.query.month : null
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const selectedMonth = monthParam && monthParam <= currentMonthKey ? monthParam : currentMonthKey
+    const [selYear, selMonthNum] = selectedMonth.split('-').map(Number)
+    const monthStart = new Date(selYear, selMonthNum - 1, 1)
+    const monthEnd   = new Date(selYear, selMonthNum, 1)
+
+    const [
+      releasesInMonth, usersInMonth, newsInMonth, statsInMonth,
+      firstUser, firstNews, firstStat, firstRelease,
+    ] = await Promise.all([
+      Release.find({ releasedAt: { $gte: monthStart, $lt: monthEnd } }, 'serieId seasonSlug epNum releasedAt').lean(),
+      User.aggregate([
+        { $match: { createdAt: { $gte: monthStart, $lt: monthEnd } } },
+        { $group: { _id: { $dayOfMonth: '$createdAt' }, count: { $sum: 1 } } },
+      ]),
+      News.aggregate([
+        { $match: { published: true, createdAt: { $gte: monthStart, $lt: monthEnd } } },
+        { $group: { _id: { $dayOfMonth: '$createdAt' }, count: { $sum: 1 } } },
+      ]),
+      Stat.aggregate([
+        { $match: { createdAt: { $gte: monthStart, $lt: monthEnd } } },
+        { $group: { _id: { d: { $dayOfMonth: '$createdAt' }, type: '$type' }, count: { $sum: 1 } } },
+      ]),
+      User.findOne().sort({ createdAt: 1 }).select('createdAt').lean(),
+      News.findOne({ published: true }).sort({ createdAt: 1 }).select('createdAt').lean(),
+      Stat.findOne().sort({ createdAt: 1 }).select('createdAt').lean(),
+      Release.findOne().sort({ releasedAt: 1 }).select('releasedAt').lean(),
+    ])
+
+    const visibleReleases = await filterVisibleReleases(releasesInMonth)
+    const episodesByDay = {}
+    for (const r of visibleReleases) episodesByDay[new Date(r.releasedAt).getDate()] = (episodesByDay[new Date(r.releasedAt).getDate()] ?? 0) + 1
+
+    const accountsByDay = Object.fromEntries(usersInMonth.map(u => [u._id, u.count]))
+    const newsByDay     = Object.fromEntries(newsInMonth.map(n => [n._id, n.count]))
+    const viewsByDay = {}, downloadsByDay = {}
+    for (const s of statsInMonth) {
+      const map = s._id.type === 'download' ? downloadsByDay : viewsByDay
+      map[s._id.d] = (map[s._id.d] ?? 0) + s.count
+    }
+
+    const daysInMonth = monthEnd.getTime() === new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime()
+      ? now.getDate()
+      : new Date(selYear, selMonthNum, 0).getDate()
+
+    const daily = []
+    for (let day = 1; day <= daysInMonth; day++) {
+      daily.push({
+        date:      `${selYear}-${String(selMonthNum).padStart(2,'0')}-${String(day).padStart(2,'0')}`,
+        episodes:  episodesByDay[day]  ?? 0,
+        accounts:  accountsByDay[day]  ?? 0,
+        news:      newsByDay[day]      ?? 0,
+        downloads: downloadsByDay[day] ?? 0,
+        views:     viewsByDay[day]     ?? 0,
+      })
+    }
+
+    // Vue mensuelle depuis la toute première donnée disponible, tous types confondus
+    const candidates = [firstUser?.createdAt, firstNews?.createdAt, firstStat?.createdAt, firstRelease?.releasedAt]
+      .filter(Boolean).map(d => new Date(d))
+
+    let monthly = []
+    if (candidates.length) {
+      const earliest = new Date(Math.min(...candidates.map(d => d.getTime())))
+      const [allReleases, usersMonthly, newsMonthly, statsMonthly] = await Promise.all([
+        Release.find({}, 'serieId seasonSlug epNum releasedAt').lean(),
+        User.aggregate([{ $group: { _id: { y: { $year: '$createdAt' }, m: { $month: '$createdAt' } }, count: { $sum: 1 } } }]),
+        News.aggregate([
+          { $match: { published: true } },
+          { $group: { _id: { y: { $year: '$createdAt' }, m: { $month: '$createdAt' } }, count: { $sum: 1 } } },
+        ]),
+        Stat.aggregate([{ $group: { _id: { y: { $year: '$createdAt' }, m: { $month: '$createdAt' }, type: '$type' }, count: { $sum: 1 } } }]),
+      ])
+
+      const visibleAllReleases = await filterVisibleReleases(allReleases)
+      const episodesByMonth = {}
+      for (const r of visibleAllReleases) {
+        const d = new Date(r.releasedAt)
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        episodesByMonth[key] = (episodesByMonth[key] ?? 0) + 1
+      }
+      const accountsByMonth = Object.fromEntries(usersMonthly.map(u => [`${u._id.y}-${String(u._id.m).padStart(2,'0')}`, u.count]))
+      const newsByMonth     = Object.fromEntries(newsMonthly.map(n  => [`${n._id.y}-${String(n._id.m).padStart(2,'0')}`, n.count]))
+      const viewsByMonth = {}, downloadsByMonth = {}
+      for (const s of statsMonthly) {
+        const key = `${s._id.y}-${String(s._id.m).padStart(2, '0')}`
+        const map = s._id.type === 'download' ? downloadsByMonth : viewsByMonth
+        map[key] = (map[key] ?? 0) + s.count
+      }
+
+      let cursor = new Date(earliest.getFullYear(), earliest.getMonth(), 1)
+      const end  = new Date(now.getFullYear(), now.getMonth(), 1)
+      while (cursor <= end) {
+        const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
+        monthly.push({
+          month:     key,
+          episodes:  episodesByMonth[key]  ?? 0,
+          accounts:  accountsByMonth[key]  ?? 0,
+          news:      newsByMonth[key]      ?? 0,
+          downloads: downloadsByMonth[key] ?? 0,
+          views:     viewsByMonth[key]     ?? 0,
+        })
+        cursor.setMonth(cursor.getMonth() + 1)
+      }
+    }
+
+    res.json({ selectedMonth, firstMonth: monthly[0]?.month ?? currentMonthKey, daily, monthly })
+  } catch (err) { next(err) }
 })
 
 // GET /api/stats/series — stats complètes par série (admin)

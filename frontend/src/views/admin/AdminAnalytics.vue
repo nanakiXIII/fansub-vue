@@ -7,7 +7,7 @@
         <h1 class="text-[18px] font-extrabold text-white">Analytics</h1>
         <p class="text-[11px] text-ink-3 mt-0.5">
           <span v-if="tab === 'presence'">Présence en temps réel · mise à jour automatique</span>
-          <span v-else>Visites des 90 derniers jours</span>
+          <span v-else>Historique complet des visites, depuis le premier enregistrement</span>
         </p>
       </div>
       <div class="flex items-center gap-2">
@@ -117,9 +117,9 @@
 
       <template v-else-if="histData">
         <!-- KPI -->
-        <div class="grid grid-cols-3 gap-3 mb-5">
+        <div class="grid grid-cols-4 gap-3 mb-5">
           <div class="bg-bg-1 border border-white/[0.06] rounded-xl p-4">
-            <div class="text-[10px] text-ink-3 uppercase tracking-wide mb-2">Total</div>
+            <div class="text-[10px] text-ink-3 uppercase tracking-wide mb-2">Total (depuis le début)</div>
             <div class="text-[28px] font-extrabold text-white leading-none">{{ fmt(histData.totalViews) }}</div>
             <div class="flex items-center gap-1 mt-1.5">
               <span class="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></span>
@@ -145,12 +145,82 @@
               <span class="text-[10px] text-ink-3">visiteurs uniques</span>
             </div>
           </div>
+          <div class="bg-bg-1 border border-white/[0.06] rounded-xl p-4">
+            <div class="text-[10px] text-ink-3 uppercase tracking-wide mb-2">Mois affiché</div>
+            <div class="text-[28px] font-extrabold text-white leading-none">{{ fmt(histData.monthViews) }}</div>
+            <div class="flex items-center gap-1 mt-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></span>
+              <span class="text-[11px] text-blue-400 font-semibold">{{ fmt(histData.monthUnique) }}</span>
+              <span class="text-[10px] text-ink-3">visiteurs uniques</span>
+            </div>
+          </div>
         </div>
 
-        <!-- Graphique 30 jours -->
+        <!-- Graphique mensuel — depuis le premier jour -->
+        <div v-if="histData.monthlyChart.length > 1" class="bg-bg-1 border border-white/[0.06] rounded-xl p-4 mb-4">
+          <div class="text-[11px] font-bold text-ink-2 mb-3">Depuis le début · un point par mois</div>
+          <div class="relative">
+            <div class="absolute left-7 right-0 top-0 h-24 pointer-events-none">
+              <div v-for="t in monthlyTicks" :key="'mg'+t" class="absolute left-0 right-0 border-t border-white/[0.06]" :style="{ top: tickY(t, monthlyNiceMax) + '%' }">
+                <span class="absolute -left-7 top-0 -translate-y-1/2 w-6 text-right pr-1 text-[8px] text-ink-3 whitespace-nowrap">{{ fmt(t) }}</span>
+              </div>
+            </div>
+            <div class="flex items-end gap-[3px] h-24 pl-7 relative">
+              <button
+                v-for="m in histData.monthlyChart" :key="m.month"
+                type="button"
+                @click="selectMonth(m.month)"
+                class="flex-1 flex flex-col items-center justify-end gap-1 group cursor-pointer"
+              >
+                <div class="relative w-full flex justify-center">
+                  <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-bg-2 border border-white/10 rounded px-1.5 py-0.5 text-[9px] text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                    {{ fmtMonth(m.month) }} · {{ fmt(chartMode === 'unique' ? m.unique : m.count) }}
+                    {{ chartMode === 'unique' ? 'visiteurs' : 'vues' }}
+                  </div>
+                </div>
+                <div
+                  class="w-full rounded-t-sm transition-all duration-300"
+                  :class="[
+                    m.month === selectedMonth
+                      ? (chartMode === 'unique' ? 'bg-blue-400' : 'bg-orange')
+                      : (chartMode === 'unique' ? 'bg-blue-400/30 group-hover:bg-blue-400/50' : 'bg-white/20 group-hover:bg-white/30')
+                  ]"
+                  :style="{ height: monthlyChartHeight(chartMode === 'unique' ? m.unique : m.count) + 'px', minHeight: (chartMode === 'unique' ? m.unique : m.count) ? '2px' : '0' }"
+                ></div>
+              </button>
+            </div>
+          </div>
+          <div class="flex justify-between mt-2 pl-7 text-[9px] text-ink-3">
+            <span>{{ fmtMonth(histData.monthlyChart[0]?.month) }}</span>
+            <span>{{ fmtMonth(histData.monthlyChart[histData.monthlyChart.length - 1]?.month) }}</span>
+          </div>
+        </div>
+
+        <!-- Graphique journalier — mois sélectionné -->
         <div class="bg-bg-1 border border-white/[0.06] rounded-xl p-4 mb-4">
-          <div class="flex items-center justify-between mb-3">
-            <div class="text-[11px] font-bold text-ink-2">30 derniers jours</div>
+          <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div class="flex items-center gap-1">
+              <button
+                type="button" @click="shiftMonth(-1)"
+                :disabled="histLoading || selectedMonth <= earliestMonth"
+                class="w-6 h-6 flex items-center justify-center rounded-md text-ink-3 hover:text-white hover:bg-bg-2 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <div class="text-[11px] font-bold text-ink-2 w-28 text-center capitalize">{{ fmtMonth(selectedMonth) }}</div>
+              <button
+                type="button" @click="shiftMonth(1)"
+                :disabled="histLoading || selectedMonth >= currentMonthKey"
+                class="w-6 h-6 flex items-center justify-center rounded-md text-ink-3 hover:text-white hover:bg-bg-2 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button
+                v-if="selectedMonth !== currentMonthKey"
+                type="button" @click="selectMonth(currentMonthKey)"
+                class="ml-1 text-[10px] font-semibold text-orange hover:text-orange-hover"
+              >Aujourd'hui</button>
+            </div>
             <div class="flex gap-1 p-0.5 bg-bg-2 rounded-lg">
               <button
                 @click="chartMode = 'views'"
@@ -164,32 +234,86 @@
               >Visiteurs</button>
             </div>
           </div>
-          <div class="flex items-end gap-[3px] h-28">
-            <div
-              v-for="day in histData.dailyChart" :key="day.date"
-              class="flex-1 flex flex-col items-center justify-end gap-1 group"
-            >
-              <div class="relative">
-                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-bg-2 border border-white/10 rounded px-1.5 py-0.5 text-[9px] text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                  {{ fmtDate(day.date) }} · {{ fmt(chartMode === 'unique' ? day.unique : day.count) }}
-                  {{ chartMode === 'unique' ? 'visiteurs' : 'vues' }}
+          <div v-if="histLoading" class="h-28 flex items-center justify-center text-[11px] text-ink-3">Chargement…</div>
+          <template v-else>
+            <div class="relative">
+              <div class="absolute left-7 right-0 top-0 h-28 pointer-events-none">
+                <div v-for="t in chartTicks" :key="'dg'+t" class="absolute left-0 right-0 border-t border-white/[0.06]" :style="{ top: tickY(t, chartNiceMax) + '%' }">
+                  <span class="absolute -left-7 top-0 -translate-y-1/2 w-6 text-right pr-1 text-[8px] text-ink-3 whitespace-nowrap">{{ fmt(t) }}</span>
                 </div>
               </div>
-              <div
-                class="w-full rounded-t-sm transition-all duration-300"
-                :class="[
-                  day.date === todayKey
-                    ? (chartMode === 'unique' ? 'bg-blue-400' : 'bg-orange')
-                    : (chartMode === 'unique' ? 'bg-blue-400/30 hover:bg-blue-400/50' : 'bg-white/20 hover:bg-white/30')
-                ]"
-                :style="{ height: chartHeight(chartMode === 'unique' ? day.unique : day.count) + 'px', minHeight: (chartMode === 'unique' ? day.unique : day.count) ? '2px' : '0' }"
-              ></div>
+              <div class="flex items-end gap-[2px] h-28 pl-7 relative">
+                <div
+                  v-for="day in histData.dailyChart" :key="day.date"
+                  class="flex-1 flex flex-col items-center justify-end gap-1 group"
+                >
+                  <div class="relative">
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-bg-2 border border-white/10 rounded px-1.5 py-0.5 text-[9px] text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                      {{ fmtDate(day.date) }} · {{ fmt(chartMode === 'unique' ? day.unique : day.count) }}
+                      {{ chartMode === 'unique' ? 'visiteurs' : 'vues' }}
+                    </div>
+                  </div>
+                  <div
+                    class="w-full rounded-t-sm transition-all duration-300"
+                    :class="[
+                      day.date === todayKey
+                        ? (chartMode === 'unique' ? 'bg-blue-400' : 'bg-orange')
+                        : (chartMode === 'unique' ? 'bg-blue-400/30 hover:bg-blue-400/50' : 'bg-white/20 hover:bg-white/30')
+                    ]"
+                    :style="{ height: chartHeight(chartMode === 'unique' ? day.unique : day.count) + 'px', minHeight: (chartMode === 'unique' ? day.unique : day.count) ? '2px' : '0' }"
+                  ></div>
+                </div>
+              </div>
+            </div>
+            <div class="flex gap-[2px] pl-7 mt-1">
+              <div v-for="day in histData.dailyChart" :key="'dl'+day.date" class="flex-1 text-center text-[7px] text-ink-3 leading-tight">{{ dayNum(day.date) }}</div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Graphique combiné — comptes / news / épisodes / vues / téléchargements -->
+        <div class="bg-bg-1 border border-white/[0.06] rounded-xl p-4 mb-4">
+          <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div class="text-[11px] font-bold text-ink-2">Activité du mois — {{ fmtMonth(selectedMonth) }}</div>
+            <div class="flex items-center gap-3 flex-wrap">
+              <label v-for="s in seriesConfig" :key="s.id" class="flex items-center gap-1.5 cursor-pointer select-none">
+                <input type="checkbox" v-model="activeSeries[s.id]" class="w-3.5 h-3.5 rounded accent-current" :style="{ accentColor: s.color }" />
+                <span class="w-2 h-2 rounded-full shrink-0" :style="{ background: s.color }"></span>
+                <span class="text-[11px] font-semibold text-ink-2">{{ s.label }}</span>
+              </label>
             </div>
           </div>
-          <div class="flex justify-between mt-2 text-[9px] text-ink-3">
-            <span>{{ fmtDate(histData.dailyChart[0]?.date) }}</span>
-            <span>Aujourd'hui</span>
-          </div>
+          <div v-if="!timelineData" class="h-28 flex items-center justify-center text-[11px] text-ink-3">Chargement…</div>
+          <template v-else-if="visibleSeries.length">
+            <div class="relative">
+              <div class="absolute left-7 right-0 top-0 h-28 pointer-events-none">
+                <div v-for="t in timelineTicks" :key="'tg'+t" class="absolute left-0 right-0 border-t border-white/[0.06]" :style="{ top: tickY(t, timelineNiceMax) + '%' }">
+                  <span class="absolute -left-7 top-0 -translate-y-1/2 w-6 text-right pr-1 text-[8px] text-ink-3 whitespace-nowrap">{{ fmt(t) }}</span>
+                </div>
+              </div>
+              <div class="flex items-end gap-[2px] h-28 pl-7 relative">
+                <div v-for="day in timelineData.daily" :key="day.date" class="flex-1 flex flex-col items-center justify-end group relative">
+                  <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-bg-2 border border-white/10 rounded px-1.5 py-1 text-[9px] text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 flex flex-col gap-0.5">
+                    <div class="font-bold">{{ fmtDate(day.date) }}</div>
+                    <div v-for="s in visibleSeries" :key="s.id" class="flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ background: s.color }"></span>{{ s.label }} : {{ day[s.id] }}
+                    </div>
+                  </div>
+                  <div class="w-full flex items-end justify-center gap-px h-full">
+                    <div
+                      v-for="s in visibleSeries" :key="s.id"
+                      class="flex-1 rounded-t-sm transition-all duration-300 min-w-[1px]"
+                      :style="{ height: seriesHeight(s.id, day[s.id]) + 'px', minHeight: day[s.id] ? '2px' : '0', background: s.color, opacity: day.date === todayKey ? 1 : 0.55 }"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="flex gap-[2px] pl-7 mt-1">
+              <div v-for="day in timelineData.daily" :key="'tl'+day.date" class="flex-1 text-center text-[7px] text-ink-3 leading-tight">{{ dayNum(day.date) }}</div>
+            </div>
+          </template>
+          <div v-else class="text-[11px] text-ink-3 text-center py-6">Coche au moins une donnée à afficher.</div>
         </div>
 
         <!-- 3 colonnes -->
@@ -378,8 +502,40 @@ watch(tab, (val, old) => {
 
 // ═══════════ HISTORIQUE ═════════════════════════════════════════
 
-const histData    = ref(null)
-const histLoading = ref(false)
+const histData     = ref(null)
+const histLoading  = ref(false)
+const timelineData = ref(null)
+
+// ── Graphique combiné (comptes / news / épisodes / vues / téléchargements) ──
+const seriesConfig = [
+  { id: 'accounts',  label: 'Comptes créés',   color: '#a78bfa' },
+  { id: 'news',      label: 'News publiées',   color: '#34d399' },
+  { id: 'episodes',  label: 'Épisodes sortis', color: '#fbbf24' },
+  { id: 'downloads', label: 'Téléchargements', color: '#2dd4bf' },
+  { id: 'views',     label: 'Vues',            color: 'rgb(var(--color-orange))' },
+]
+const activeSeries = ref(Object.fromEntries(seriesConfig.map(s => [s.id, true])))
+const visibleSeries = computed(() => seriesConfig.filter(s => activeSeries.value[s.id]))
+
+// Échelle commune à toutes les séries cochées (pas une échelle par série), pour que les
+// traits de mesure aient un sens : la hauteur reflète la vraie grandeur relative entre séries.
+const timelineRawMax = computed(() => {
+  const days = timelineData.value?.daily ?? []
+  const ids  = visibleSeries.value.map(s => s.id)
+  if (!ids.length) return 1
+  return Math.max(1, ...days.flatMap(d => ids.map(id => d[id] ?? 0)))
+})
+const timelineNiceMax = computed(() => niceMax(timelineRawMax.value))
+const timelineTicks    = computed(() => gridTicks(timelineRawMax.value))
+function seriesHeight(id, value) { return Math.round((value / timelineNiceMax.value) * 96) }
+
+// Le mois le plus ancien navigable = le plus ancien entre les deux sources (fréquentation
+// et activité), pas seulement la fréquentation — sinon on ne peut pas remonter avant la mise
+// en place du tracking de visites même si des comptes/news/épisodes existent avant.
+const earliestMonth = computed(() => {
+  const candidates = [histData.value?.firstMonth, timelineData.value?.firstMonth].filter(Boolean)
+  return candidates.length ? candidates.sort()[0] : currentMonthKey.value
+})
 
 const todayKey = computed(() => {
   const d = new Date()
@@ -387,13 +543,68 @@ const todayKey = computed(() => {
 })
 const chartMode = ref('views')
 
+// ── Échelle "arrondie" façon axe de graphique (1/2/5/10 × 10^n) ───
+function niceMax(value) {
+  if (!value || value <= 0) return 1
+  const exponent = Math.floor(Math.log10(value))
+  const fraction  = value / Math.pow(10, exponent)
+  const niceFraction = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10
+  return niceFraction * Math.pow(10, exponent)
+}
+// Valeurs des traits horizontaux, du haut (valeur max) vers le bas (0)
+function gridTicks(rawMax, count = 4) {
+  const top = niceMax(rawMax)
+  const step = top / count
+  return Array.from({ length: count + 1 }, (_, i) => Math.round(step * (count - i)))
+}
+// Position verticale (% depuis le haut) d'un trait pour une valeur donnée
+function tickY(tick, top) { return top ? 100 - (tick / top) * 100 : 100 }
+// Jour du mois isolé depuis une date "YYYY-MM-DD", pour l'étiquette sous chaque barre
+function dayNum(dateStr) { return String(Number(dateStr?.split('-')[2] ?? 0)) }
+
 const chartMax = computed(() => {
   const days = histData.value?.dailyChart ?? []
   return Math.max(1, ...days.map(d => chartMode.value === 'unique' ? d.unique : d.count))
 })
+const chartNiceMax = computed(() => niceMax(chartMax.value))
+const chartTicks    = computed(() => gridTicks(chartMax.value))
 
-function chartHeight(count) { return Math.round((count / chartMax.value) * 96) }
+const monthlyChartMax = computed(() => {
+  const months = histData.value?.monthlyChart ?? []
+  return Math.max(1, ...months.map(m => chartMode.value === 'unique' ? m.unique : m.count))
+})
+const monthlyNiceMax = computed(() => niceMax(monthlyChartMax.value))
+const monthlyTicks    = computed(() => gridTicks(monthlyChartMax.value))
+
+function chartHeight(count) { return Math.round((count / chartNiceMax.value) * 96) }
+function monthlyChartHeight(count) { return Math.round((count / monthlyNiceMax.value) * 80) }
 function barPct(count, arr) { return Math.round((count / Math.max(1, arr[0]?.count ?? 1)) * 100) }
+
+// ── Navigation mensuelle ─────────────────────────────────────────
+const currentMonthKey = computed(() => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`
+})
+const selectedMonth = ref(currentMonthKey.value)
+
+function fmtMonth(key) {
+  if (!key) return ''
+  const [y, m] = key.split('-').map(Number)
+  const label = new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
+
+function shiftMonth(delta) {
+  const [y, m] = selectedMonth.value.split('-').map(Number)
+  const d = new Date(y, m - 1 + delta, 1)
+  selectMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`)
+}
+
+function selectMonth(key) {
+  if (key === selectedMonth.value) return
+  selectedMonth.value = key
+  loadHistory()
+}
 
 function fmt(n) {
   if (n == null) return '0'
@@ -431,7 +642,14 @@ function sourceIcon(source) { return SOURCE_ICONS[source] ?? '🌐' }
 
 async function loadHistory() {
   histLoading.value = true
-  try { histData.value = await http.get('/analytics/summary') } catch {}
+  try {
+    const [summary, timeline] = await Promise.all([
+      http.get(`/analytics/summary?month=${selectedMonth.value}`),
+      http.get(`/stats/timeline?month=${selectedMonth.value}`),
+    ])
+    histData.value     = summary
+    timelineData.value = timeline
+  } catch {}
   histLoading.value = false
 }
 

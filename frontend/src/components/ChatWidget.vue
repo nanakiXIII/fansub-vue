@@ -329,31 +329,31 @@ watch(open, (val) => { if (val) resetUnread() })
   background: rgb(var(--color-orange));
   border-radius: 0;
   clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
-  box-shadow: 0 0 16px rgba(var(--color-orange), 0.4);
+  box-shadow: 0 0 16px rgb(var(--color-orange) / 0.4);
   transition: box-shadow 0.2s, filter 0.2s;
 }
 .chat-fab--gundam:hover {
   transform: none;
   filter: brightness(1.12);
-  box-shadow: 0 0 28px rgba(var(--color-orange), 0.6);
+  box-shadow: 0 0 28px rgb(var(--color-orange) / 0.6);
 }
 .chat-fab--gundam.chat-fab--open {
-  background: rgba(var(--color-orange), 0.15);
-  border: 1px solid rgba(var(--color-orange), 0.4);
-  box-shadow: 0 0 12px rgba(var(--color-orange), 0.2);
+  background: rgb(var(--color-orange) / 0.15);
+  border: 1px solid rgb(var(--color-orange) / 0.4);
+  box-shadow: 0 0 12px rgb(var(--color-orange) / 0.2);
 }
 
 .chat-panel--gundam {
   background: rgb(var(--color-bg-1));
-  border: 1px solid rgba(var(--color-orange), 0.18);
-  border-top: 2px solid rgba(var(--color-orange), 0.5);
+  border: 1px solid rgb(var(--color-orange) / 0.18);
+  border-top: 2px solid rgb(var(--color-orange) / 0.5);
   border-radius: 0;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.8), 0 0 24px rgba(var(--color-orange), 0.06);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.8), 0 0 24px rgb(var(--color-orange) / 0.06);
 }
 
 .chat-header--gundam {
-  background: rgba(var(--color-orange), 0.05);
-  border-bottom: 1px solid rgba(var(--color-orange), 0.12);
+  background: rgb(var(--color-orange) / 0.05);
+  border-bottom: 1px solid rgb(var(--color-orange) / 0.12);
 }
 .chat-header--gundam::before {
   content: '// ';
@@ -365,11 +365,11 @@ watch(open, (val) => { if (val) resetUnread() })
 }
 
 .chat-messages--gundam {
-  scrollbar-color: rgba(var(--color-orange), 0.35) transparent;
+  scrollbar-color: rgb(var(--color-orange) / 0.35) transparent;
 }
 .chat-messages--gundam::-webkit-scrollbar-thumb {
   border-radius: 0;
-  background: rgba(var(--color-orange), 0.35);
+  background: rgb(var(--color-orange) / 0.35);
 }
 
 .chat-msg--gundam {
@@ -378,33 +378,33 @@ watch(open, (val) => { if (val) resetUnread() })
   transition: border-color 0.15s;
 }
 .chat-msg--gundam:hover {
-  border-left-color: rgba(var(--color-orange), 0.4);
+  border-left-color: rgb(var(--color-orange) / 0.4);
 }
 
 .chat-input-area--gundam {
-  background: rgba(var(--color-orange), 0.02);
-  border-top: 1px solid rgba(var(--color-orange), 0.12);
+  background: rgb(var(--color-orange) / 0.02);
+  border-top: 1px solid rgb(var(--color-orange) / 0.12);
 }
 
 .chat-input--gundam {
-  background: rgba(var(--color-orange), 0.03);
-  border: 1px solid rgba(var(--color-orange), 0.15);
+  background: rgb(var(--color-orange) / 0.03);
+  border: 1px solid rgb(var(--color-orange) / 0.15);
   border-radius: 0;
 }
 .chat-input--gundam:focus {
-  border-color: rgba(var(--color-orange), 0.5);
-  box-shadow: 0 0 0 1px rgba(var(--color-orange), 0.12);
+  border-color: rgb(var(--color-orange) / 0.5);
+  box-shadow: 0 0 0 1px rgb(var(--color-orange) / 0.12);
 }
 
 .chat-send-btn--gundam {
   background: rgb(var(--color-orange));
   border-radius: 0;
   clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
-  box-shadow: 0 0 10px rgba(var(--color-orange), 0.35);
+  box-shadow: 0 0 10px rgb(var(--color-orange) / 0.35);
 }
 .chat-send-btn--gundam:not(:disabled):hover {
   opacity: 1;
   filter: brightness(1.12);
-  box-shadow: 0 0 18px rgba(var(--color-orange), 0.55);
+  box-shadow: 0 0 18px rgb(var(--color-orange) / 0.55);
 }
 </style>

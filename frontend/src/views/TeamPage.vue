@@ -227,9 +227,9 @@ const departments = computed(() => [
 .tp-hero-hex {
   position: absolute; inset: 0;
   background-image:
-    repeating-linear-gradient(60deg,  rgba(var(--color-orange), 0.04) 0, rgba(var(--color-orange), 0.04) 1px, transparent 0, transparent 50%),
-    repeating-linear-gradient(120deg, rgba(var(--color-orange), 0.04) 0, rgba(var(--color-orange), 0.04) 1px, transparent 0, transparent 50%),
-    repeating-linear-gradient(0deg,   rgba(var(--color-orange), 0.04) 0, rgba(var(--color-orange), 0.04) 1px, transparent 0, transparent 50%);
+    repeating-linear-gradient(60deg,  rgb(var(--color-orange) / 0.04) 0, rgb(var(--color-orange) / 0.04) 1px, transparent 0, transparent 50%),
+    repeating-linear-gradient(120deg, rgb(var(--color-orange) / 0.04) 0, rgb(var(--color-orange) / 0.04) 1px, transparent 0, transparent 50%),
+    repeating-linear-gradient(0deg,   rgb(var(--color-orange) / 0.04) 0, rgb(var(--color-orange) / 0.04) 1px, transparent 0, transparent 50%);
   background-size: 40px 40px;
 }
 .tp-hud { position: absolute; width: 16px; height: 16px; z-index: 2; }
@@ -264,7 +264,7 @@ const departments = computed(() => [
 .tp-hero-sub { font-size: 12px; color: rgb(var(--color-ink-2)); max-width: 500px; }
 .tp-hero-bottom {
   position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, rgb(var(--color-orange)), rgba(var(--color-orange), 0.3) 60%, transparent);
+  background: linear-gradient(90deg, rgb(var(--color-orange)), rgb(var(--color-orange) / 0.3) 60%, transparent);
 }
 
 /* ── Layout ─────────────────────────────────────────────────────── */
@@ -278,19 +278,19 @@ const departments = computed(() => [
 @media (max-width: 640px) { .tp-stats { grid-template-columns: repeat(2, 1fr); } }
 .tp-stat {
   background: rgb(var(--color-bg-1));
-  border: 1px solid rgba(var(--color-orange), 0.1);
-  border-top: 2px solid rgba(var(--color-orange), 0.45);
+  border: 1px solid rgb(var(--color-orange) / 0.1);
+  border-top: 2px solid rgb(var(--color-orange) / 0.45);
   padding: 14px 12px; text-align: center;
 }
 .tp-stat-value { font-size: 26px; font-weight: 900; color: rgb(var(--color-orange)); line-height: 1; margin-bottom: 4px; }
 .tp-stat-label { font-size: 8px; font-family: 'Courier New', monospace; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--color-ink-3)); }
 
 /* ── Séparateur ─────────────────────────────────────────────────── */
-.tp-divider { height: 1px; background: linear-gradient(90deg, rgba(var(--color-orange), 0.25), transparent); }
+.tp-divider { height: 1px; background: linear-gradient(90deg, rgb(var(--color-orange) / 0.25), transparent); }
 
 /* ── Département ────────────────────────────────────────────────── */
 .tp-dept-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.tp-dept-mark { width: 3px; height: 16px; background: rgb(var(--color-orange)); box-shadow: 0 0 8px rgba(var(--color-orange), 0.5); flex-shrink: 0; }
+.tp-dept-mark { width: 3px; height: 16px; background: rgb(var(--color-orange)); box-shadow: 0 0 8px rgb(var(--color-orange) / 0.5); flex-shrink: 0; }
 .tp-dept-count { font-size: 8px; font-family: 'Courier New', monospace; letter-spacing: 0.12em; color: rgb(var(--color-ink-3)); margin-left: auto; }
 
 /* ── Cards ──────────────────────────────────────────────────────── */
@@ -301,17 +301,17 @@ const departments = computed(() => [
 }
 .tp-card {
   background: rgb(var(--color-bg-1));
-  border: 1px solid rgba(var(--color-orange), 0.1);
+  border: 1px solid rgb(var(--color-orange) / 0.1);
   position: relative;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .tp-card:hover {
-  border-color: rgba(var(--color-orange), 0.3);
-  box-shadow: 0 0 20px rgba(var(--color-orange), 0.06);
+  border-color: rgb(var(--color-orange) / 0.3);
+  box-shadow: 0 0 20px rgb(var(--color-orange) / 0.06);
 }
 .tp-card-top {
   height: 2px;
-  background: rgba(var(--color-orange), 0.45);
+  background: rgb(var(--color-orange) / 0.45);
   transition: background 0.15s;
 }
 .tp-card:hover .tp-card-top { background: rgb(var(--color-orange)); }
@@ -340,15 +340,15 @@ const departments = computed(() => [
 /* ── CTA ────────────────────────────────────────────────────────── */
 .tp-cta {
   position: relative;
-  border: 1px solid rgba(var(--color-orange), 0.18);
-  border-top: 2px solid rgba(var(--color-orange), 0.55);
+  border: 1px solid rgb(var(--color-orange) / 0.18);
+  border-top: 2px solid rgb(var(--color-orange) / 0.55);
   overflow: hidden;
 }
 .tp-cta-mark {
   position: absolute; top: 0; left: 0; right: 0; height: 100%;
   background: repeating-linear-gradient(
     60deg,
-    rgba(var(--color-orange), 0.015) 0, rgba(var(--color-orange), 0.015) 1px,
+    rgb(var(--color-orange) / 0.015) 0, rgb(var(--color-orange) / 0.015) 1px,
     transparent 0, transparent 50%
   );
   background-size: 30px 30px;
